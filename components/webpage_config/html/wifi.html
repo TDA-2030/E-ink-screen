@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WiFi connection</title>
+    <meta http-equiv="pragma" content="no-cache">
+    <meta http-equiv="cache-control" content="no-cache">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+	<link rel="icon" type="image/png" href="favicon.ico" />
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script type="text/javascript" src="140medley.min.js"></script>
+    <script>
+        var xhr=j();
+        var currAp="%currSsid%";
+
+        function createInputForAp(ap) {
+            if (ap.essid=="" && ap.rssi==0) return;
+            var rssi=document.createElement("div");
+            var rssiVal= ap.rssi;
+            if (rssiVal >= -50) {
+                rssiVal = 5;
+            } else if (rssiVal >= -70) {
+                rssiVal = 4;
+            } else if (rssiVal >= -80) {
+                rssiVal = 3;
+            } else if (rssiVal >= -90) {
+                rssiVal = 2;
+            } else{
+                rssiVal = 1;
+            }
+            rssi.className="item flex align-items justify-content-between";
+            rssi.setAttribute("data-value", ap.essid);
+            if (currAp==ap.essid) {
+
+            }
+            var span=document.createElement("div");
+            span.textContent=ap.essid;
+			span.setAttribute("data-value", ap.essid);
+            var nodeI=document.createElement("div");
+            nodeI.className="signal-" + rssiVal + " signal";
+			nodeI.setAttribute("data-value", ap.essid);
+            rssi.appendChild(span);
+            rssi.appendChild(nodeI);
+            return rssi;
+        }
+
+        function getSelectedEssid() {
+            var e=document.forms.wifiform.elements;
+            for (var i=0; i<e.length; i++) {
+                if (e[i].type=="radio" && e[i].checked) return e[i].value;
+            }
+            return currAp;
+        }
+        function addClick() {
+            var dom = document.getElementById("aps");
+            addEventHandler(dom, "click", eventFun);
+            var dom1 = document.getElementById("other-wifi");
+            addEventHandler(dom1, "click", function() {
+                var domM = document.getElementById("modal-mask-other");
+                domM.classList.remove("hidden");
+                document.getElementById('other-essid').focus();
+            });
+        }
+        function eventFun(event) {
+            event = event || window.event;
+            var target = event.target || event.srcElement,
+                value = target.dataset.value,
+                dom = document.getElementById("modal-mask");
+            dom.classList.remove("hidden");
+            document.getElementById('password').focus();
+            document.getElementById("modal-title").innerHTML = value;
+            document.getElementById("essid").value = value;
+
+        }
+        function cancel() {
+            document.getElementById("modal-mask").classList.add("hidden");
+            document.getElementById("modal-mask-other").classList.add("hidden");
+        }
+        //绑定监听事件
+        function addEventHandler(target,type,fn){
+            if(target.addEventListener){
+                target.addEventListener(type,fn);
+            }else{
+                target.attachEvent("on"+type,fn);
+            }
+        }
+        function scanAPs() {
+            xhr.open("GET", "wifiscan.cgi");
+            xhr.onreadystatechange=function() {
+                if (xhr.readyState==4 && xhr.status>=200 && xhr.status<300) {
+                    var data=JSON.parse(xhr.responseText);
+                    //currAp=getSelectedEssid();
+                    if (data.result.inProgress=="0" && data.result.APs.length>1) {
+                        document.getElementById("loading-mask").classList.add("hidden");
+                        $("#aps").innerHTML="";
+                        for (var i=0; i<data.result.APs.length; i++) {
+                            if (data.result.APs[i].essid=="" && data.result.APs[i].rssi==0) continue;
+                            $("#aps").appendChild(createInputForAp(data.result.APs[i]));
+                        }
+                        // window.setTimeout(scanAPs, 20000);
+                    } else {
+                        window.setTimeout(scanAPs, 1000);
+                    }
+                }
+            }
+            xhr.send();
+        }
+
+
+        window.onload=function(e) {
+            addClick();
+            scanAPs();
+        };
+    </script>
+</head>
+<body>
+<div id="main">
+    <div class="header bg flex align-items justify-content">
+        <div class="network"></div>
+    </div>
+    <div class="content">
+        <div id="aps">
+        </div>
+        <div id="other-wifi" class="item flex align-items justify-content-between">
+            <div>Other...</div>
+        </div>
+    </div>
+    <div id="modal-mask" class="mask hidden">
+        <div class="height100 flex justify-content">
+            <div class="modal">
+                <form name="wifiform" action="connect.cgi" method="post">
+                    <div id="modal-title" class="modal-title">name</div>
+                    <div class="modal-body">
+                        <input type="hidden" name="essid" id="essid">
+                        <input type="password" placeholder="Please enter password" name="password" id="password" val="%WiFiPassword%">
+                    </div>
+                    <div class="modal-btn">
+                        <button type="reset" onclick="cancel()" class="btn">Cancel</button>
+                        <button type="submit" class="btn blue">Confirm</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div id="modal-mask-other" class="mask hidden">
+        <div class="height100 flex justify-content">
+            <div class="modal">
+                <form name="wifiform" action="connect.cgi" method="post">
+                    <div class="modal-body">
+                        <input type="text" placeholder="Please enter ssid" name="essid" id="other-essid" style="margin-bottom: 15px;">
+                        <input type="password" placeholder="Please enter password" name="password"  val="%WiFiPassword%">
+                    </div>
+                    <div class="modal-btn">
+                        <button type="reset" onclick="cancel()" class="btn">Cancel</button>
+                        <button type="submit" class="btn blue">Confirm</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div id="loading-mask" class="mask">
+        <div class="height100 flex align-items justify-content">
+            <div class="scan-wrapper flex align-items justify-content flex-direction-column">
+                <div class="loading icon-spin"></div>
+                <div class="loading-text">Scanning...</div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,37 @@
+menu "Captive Portal"
+    config WEB_DNS_SUPPORT
+        bool "Enable DNS support"
+        default y 
+        help
+                Enable this to allows use domain name to access http serve
+
+    config WEB_USE_GZIP_COMPRESSION
+            bool "Compress webpages with gzip"
+            default n
+            help
+                    Compress webpages files with the gzip compressor. Needs gzip installed.
+
+
+    config WEB_SSL_SUPPORT
+            #bool "Enable SSL support"  #Disabled by for now.
+            bool
+            default n
+            help
+                    SSL connections require ~32k of ram each.
+
+                    Enabling this allows the server to be placed into ssl mode.
+
+                    SSL servers require certificates. Steps to use:
+                    - Place a 'cacert.pem' and 'prvtkey.pem' files in your app directory.
+
+                    - To create self certified certificates:
+                            $ openssl req -sha256 -newkey rsa:4096 -nodes -keyout key.pem -x509 -days 365 -out certificate.pem
+
+                    - Create a 'component.mk' file in your app directory and add these lines to it:
+                            COMPONENT_EMBED_TXTFILES := cacert.pem
+                            COMPONENT_EMBED_TXTFILES += prvtkey.pem
+
+
+    
+    
+endmenu

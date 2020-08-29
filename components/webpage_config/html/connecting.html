@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WiFi connection</title>
+    <meta http-equiv="pragma" content="no-cache">
+    <meta http-equiv="cache-control" content="no-cache">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+	<link rel="icon" type="image/png" href="favicon.ico" />
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script type="text/javascript" src="140medley.min.js"></script>
+    <script>
+        var xhr=j();
+        var frequency = 0;
+        var timer = "";
+        function getStatus() {
+            var dom = document.getElementById("status"),
+                domTitle = document.getElementById("connect"),
+                domLoad = document.getElementById("loading-mask");
+            if (frequency < 30) {
+                xhr.open("GET", "connstatus.cgi");
+                xhr.onreadystatechange=function() {
+                    if (xhr.readyState==4 && xhr.status>=200 && xhr.status<300) {
+                        var data=JSON.parse(xhr.responseText);
+                        if (data.status=="idle") {
+                            window.setTimeout(getStatus, 1000);
+                        } else if (data.status=="success") {
+                            domLoad.classList.add("hidden");
+                            dom.innerHTML="<div class='success'></div><p>Connected!</p>";
+                            domTitle.classList.add("hidden");
+                            clearInterval(timer);
+                            setResult("success");
+                        } else if (data.status=="working") {
+                            window.setTimeout(getStatus, 1000);
+                        } else if (data.status=="fail") {
+                            domLoad.classList.add("hidden");
+                            dom.innerHTML="<div class='fail'></div><p class='textcenter'>Connection failed. Check password and selected AP.<br /><a href=\"wifi.tpl\">Go Back</a></p>";
+                            domTitle.classList.add("hidden");
+                            clearInterval(timer);
+                        }
+                    }
+                }
+                xhr.send();
+            } else {
+                dom.innerHTML="<div class='fail'></div><p class='textcenter'>Connection failed. Check password and selected AP.<br /><a href=\"wifi.tpl\">Go Back</a></p>";
+                domTitle.classList.add("hidden");
+            }
+        }
+        function setResult(result) {
+            xhr.open("POST","configsuccess.cgi",true);
+            xhr.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+            xhr.send("configstatus="+result);
+        };
+
+        window.onload=function(e) {
+            getStatus();
+            timer = setInterval(function(){
+				if (frequency < 30) {
+					frequency++;
+				} else {
+					document.getElementById("status").innerHTML="<div class='fail'></div><p class='textcenter'>Connection failed. Check password and selected AP.<br /><a href=\"wifi.tpl\">Go Back</a></p>";
+					document.getElementById("connect").classList.add("hidden");
+					document.getElementById("loading-mask").classList.add("hidden");
+					clearInterval(timer);
+				}
+			}, 1000)
+        };
+    </script>
+</head>
+<body>
+<div id="main" class="bg">
+    <div class="header flex align-items justify-content">
+        <div class="network"></div>
+    </div>
+    <div class="status-wrapper">
+        <div class="status-content">
+            <p id="connect" class="connect">
+                <span>Connecting to AP</span>
+            </p>
+            <div id="status" class="textcenter status-info flex align-items justify-content flex-direction-column">
+            </div>
+        </div>
+
+    </div>
+    <div id="loading-mask" class="mask">
+        <div class="height100 flex align-items justify-content">
+            <div class="scan-wrapper flex align-items justify-content flex-direction-column">
+                <div class="loading icon-spin"></div>
+                <div class="loading-text">Connecting...</div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

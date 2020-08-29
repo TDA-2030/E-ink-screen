@@ -1,0 +1,338 @@
+
+html,body {
+	font-family: sans-serif;
+	padding: 0;
+	margin: 0;
+	height: 100%;
+	color: #444;
+}
+
+#main {
+	background-color: #f7f7f7;
+	height: 100%;
+	width: 100%;
+	position: relative;
+	box-sizing: border-box;
+}
+.header {
+	height: 45%;
+	width: 100%;
+}
+.bg {
+	background: -webkit-linear-gradient(left top, #7baaf3, #4588ef); /* Safari 5.1 - 6.0 */
+	background: -o-linear-gradient(bottom right, #7baaf3, #4588ef); /* Opera 11.1 - 12.0 */
+	background: -moz-linear-gradient(bottom right, #7baaf3, #4588ef); /* Firefox 3.6 - 15 */
+	background: linear-gradient(bottom right, #7baaf3, #4588ef); /* 标准的语法 */
+}
+.header .icon-router {
+	font-size: 180px;
+	color: #fff;
+	text-shadow: 0px 0px 5px #fff;
+}
+.content {
+	padding-bottom: 15px;
+	background-color: #f7f7f7;
+	box-sizing: border-box;
+}
+.item {
+	height: 60px;
+	width: 100%;
+	background: #fff;
+	padding: 0 15px;
+	border-bottom: 1px solid #dbdbdb;
+	box-sizing: border-box;
+}
+.mask {
+	position: fixed;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, .4);
+	z-index: 2000;
+}
+.modal {
+	position: relative;
+	top: 15%;
+	width: 300px;
+	height: 164px;
+	background: #fff;
+	border-radius: 6px;
+	outline: 0;
+	-webkit-box-shadow: 0 3px 9px rgba(0,0,0,.5);
+	box-shadow: 0 3px 9px rgba(0,0,0,.5);
+	box-sizing: border-box;
+	overflow: hidden;
+	z-index: 2001;
+}
+.modal-title {
+	text-align: center;
+	padding: 10px;
+}
+.modal-body {
+	padding: 15px 10px 30px;
+	border-bottom: 1px solid #dbdbdb;
+}
+.modal-body input {
+	border: 1px solid #dbdbdb;
+	outline: none;
+	height: 35px;
+	width: 100%;
+	border-radius: 5px;
+	padding: 0 10px;
+	box-sizing: border-box;
+}
+.modal-btn {
+	width: 100%;
+	font-size: 0px;
+	text-align: center;
+}
+.status-wrapper {
+	position: absolute;
+	bottom: 40px;
+	width: 100%;
+	box-sizing: border-box;
+}
+.status-content {
+	min-height: 200px;
+	width: 80%;
+	max-width: 400px;
+	margin: 0 auto;
+	padding: 15px;
+	background: #fff;
+	border-radius: 5px;
+}
+.connect {
+	position: relative;
+	margin: 0 10px 10px;
+	padding-bottom: 10px;
+	border-bottom: 1px solid #dbdbdb;
+	text-align: center;
+}
+.connect .omit {
+	position: absolute;
+}
+.status-info {
+	margin: 10px 0;
+}
+.textcenter {
+	text-align: center;
+}
+.btn {
+	height: 40px;
+	width: 48%;
+	border: none;
+	background: #fff;
+	outline: none;
+	cursor: pointer;
+	display: inline-block;
+	box-sizing: border-box;
+}
+.btn:first-child {
+	border-right: 1px solid #dbdbdb;
+}
+.blue {
+	color: #4588ef;
+}
+.hidden {
+	display: none;
+}
+.padding {
+	padding: 10px 15px;
+	margin: 0;
+}
+.font-color {
+	font-size: 14px;
+	color: #999;
+}
+
+.fail {
+	width: 64px;
+	height: 62px;
+	background-image: url(wifi.png);
+	background-position: 0px 0px;
+}
+
+.loading {
+	width: 32px;
+	height: 32px;
+	background-image: url(wifi.png);
+	background-position: 0px -62px;
+}
+
+.network {
+	width: 180px;
+	height: 180px;
+	background-image: url(wifi.png);
+	background-position: 0px -94px;
+}
+
+.signal-1 {
+	width: 32px;
+	height: 32px;
+	background-image: url(wifi.png);
+	background-position: 0px -274px;
+}
+
+.signal-2 {
+	width: 32px;
+	height: 32px;
+	background-image: url(wifi.png);
+	background-position: 0px -306px;
+}
+
+.signal-3 {
+	width: 32px;
+	height: 32px;
+	background-image: url(wifi.png);
+	background-position: 0px -338px;
+}
+
+.signal-4 {
+	width: 32px;
+	height: 32px;
+	background-image: url(wifi.png);
+	background-position: 0px -370px;
+}
+
+.signal-5 {
+	width: 32px;
+	height: 32px;
+	background-image: url(wifi.png);
+	background-position: 0px -402px;
+}
+
+.success {
+	width: 64px;
+	height: 64px;
+	background-image: url(wifi.png);
+	background-position: 0px -434px;
+}
+.flex {
+	display: box; /* OLD - Android 4.4- */
+	display: -webkit-box; /* Chrome 4+, Safari 3.1, iOS Safari 3.2+ */
+	display: -moz-box; /* Firefox 17- */
+	display: -webkit-flex; /* Chrome 21+, Safari 6.1+, iOS Safari 7+, Opera 15/16 */
+	display: -moz-flex; /* Firefox 18+ */
+	display: -ms-flexbox; /* IE 10 */
+	display: flex; /* Chrome 29+, Firefox 22+, IE 11+, Opera 12.1/17/18, Android 4.4+ */
+}
+.align-items {
+	-moz-box-align:center;
+	-webkit-box-align:center;
+	box-align:center;
+	-webkit-align-items: center;
+	-moz-align-items: center;
+	-ms-align-items: center;
+	-o-align-items: center;
+	align-items: center;
+}
+.justify-content-between {
+	-webkit-box-pack: justify;
+	-webkit-justify-content: space-between;
+	-moz-justify-content: space-between;
+	-ms-justify-content: space-between;
+	-o-justify-content: space-between;
+	justify-content: space-between;
+}
+.justify-content-start {
+	-webkit-box-pack: start;
+	-webkit-justify-content: flex-start;
+	-moz-justify-content: flex-start;
+	-ms-justify-content: flex-start;
+	-o-justify-content: flex-start;
+	justify-content: flex-start;
+}
+.justify-content-end {
+	-webkit-box-pack: end;
+	-webkit-justify-content: flex-end;
+	-moz-justify-content: flex-end;
+	-ms-justify-content: flex-end;
+	-o-justify-content: flex-end;
+	justify-content: flex-end;
+}
+.justify-content {
+	-webkit-box-pack: center;
+	-webkit-justify-content: center;
+	-moz-justify-content: center;
+	-ms-justify-content: center;
+	-o-justify-content: center;
+	justify-content: center;
+}
+.flex-direction-column {
+	-webkit-box-orient:vertical;
+	-webkit-box-direction:normal;
+	-moz-box-orient:vertical;
+	-moz-box-direction:normal;
+	-webkit-flex-direction:column;
+	flex-direction:column;
+}
+.textright {
+	text-align: right;
+}
+.scan-wrapper {
+	width: 120px;
+	height: 120px;
+	background: rgba(0, 0, 0, .6);
+	color: #fff;
+	border-radius: 6px;
+
+	padding: 5px;
+	box-sizing: border-box;
+}
+.scan-wrapper i {
+	margin-bottom: 5px;
+}
+.loading-text {
+	margin-top: 5px;
+}
+.icon-spin {
+	display: inline-block;
+	-moz-animation: spin 2s infinite linear;
+	-o-animation: spin 2s infinite linear;
+	-webkit-animation: spin 2s infinite linear;
+	animation: spin 2s infinite linear;
+}
+.height100 {
+	height: 100%;
+}
+@-moz-keyframes spin {
+	0% {
+		-moz-transform: rotate(0deg);
+	}
+	100% {
+		-moz-transform: rotate(359deg);
+	}
+}
+@-webkit-keyframes spin {
+	0% {
+		-webkit-transform: rotate(0deg);
+	}
+	100% {
+		-webkit-transform: rotate(359deg);
+	}
+}
+@-o-keyframes spin {
+	0% {
+		-o-transform: rotate(0deg);
+	}
+	100% {
+		-o-transform: rotate(359deg);
+	}
+}
+@-ms-keyframes spin {
+	0% {
+		-ms-transform: rotate(0deg);
+	}
+	100% {
+		-ms-transform: rotate(359deg);
+	}
+}
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(359deg);
+	}
+}
