@@ -1,5 +1,19 @@
 menu "Eink Configuration"
 
+    choice SNTP_TIME_SYNC_METHOD
+        prompt "Time synchronization method"
+        default SNTP_TIME_SYNC_METHOD_IMMED
+        help
+            Time synchronization method.
+
+        config SNTP_TIME_SYNC_METHOD_IMMED
+            bool "update time immediately when received"
+        config SNTP_TIME_SYNC_METHOD_SMOOTH
+            bool "update time with smooth method (adjtime)"
+        config SNTP_TIME_SYNC_METHOD_CUSTOM
+            bool "custom implementation"
+    endchoice
+    
     choice LCD_TYPE
         prompt "LCD module type"
         default LCD_TYPE_AUTO
