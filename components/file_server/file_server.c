@@ -435,11 +435,11 @@ static esp_err_t delete_post_handler(httpd_req_t *req)
 /* Function to start the file server */
 esp_err_t start_file_server(void)
 {
-    /* Initialize file storage */
-    ESP_ERROR_CHECK(fm_init());
-
     fs_info_t *info;
-    fm_get_info(&info);
+    if(ESP_OK != fm_get_info(&info))
+    {
+        return ESP_FAIL;
+    }
 
     static struct file_server_data *server_data = NULL;
 
