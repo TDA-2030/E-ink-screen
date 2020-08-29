@@ -28,29 +28,33 @@
 #ifndef EPDIF_H
 #define EPDIF_H
 
+#ifdef __cplusplus 
+extern "C" {
+#endif
+
 #include "esp_log.h"
 
 // Pin definition
-#define RST_PIN         12
-#define DC_PIN          14
-#define CS_PIN          15
-#define BUSY_PIN        35
-#define MOSI_PIN        26
-#define SCLK_PIN        27
+#define RST_PIN         CONFIG_EDPIO_RST_PIN
+#define DC_PIN          CONFIG_EDPIO_DC_PIN
+#define CS_PIN          CONFIG_EDPIO_CS_PIN
+#define BUSY_PIN        CONFIG_EDPIO_BUSY_PIN
+#define MOSI_PIN        CONFIG_EDPIO_MOSI_PIN
+#define SCLK_PIN        CONFIG_EDPIO_SCLK_PIN
 
 #define LOW  0
 #define HIGH 1
 
-#ifdef __cplusplus 
-extern "C" {
-#endif
+
 int  IfInit(void);
 int  IfDeinit(void);
 void DigitalWrite(int pin, int value); 
 int  DigitalRead(int pin);
 void DelayMs(unsigned int delaytime);
 void SpiTransfer(unsigned char data);
+
 #ifdef __cplusplus 
 }
 #endif
+
 #endif
