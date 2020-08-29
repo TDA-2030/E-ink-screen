@@ -16,26 +16,19 @@ Keep in mind that the decoder library cannot handle progressive files (will give
 ``Image decoder: jd_prepare failed (8)`` as an error) so make sure to save in the correct
 format if you want to use a different image file.
 */
+#include "esp_log.h"
+#include <string.h>
+#include "esp_vfs.h"
 
 #include "decode_image.h"
 #include "tjpgd.h"
-#include "esp_log.h"
-#include <string.h>
-
-//Reference the binary-included jpeg file
-extern const uint8_t image_jpg_start[] asm("_binary_image_jpg_start");
-extern const uint8_t image_jpg_end[] asm("_binary_image_jpg_end");
-//Define the height and width of the jpeg file. Make sure this matches the actual jpeg
-//dimensions.
-#define IMAGE_W 336
-#define IMAGE_H 256
 
 const char *TAG = "ImageDec";
 
 //Data that is passed from the decoder function to the infunc/outfunc functions.
 typedef struct
 {
-    FILE *fd = NULL;
+    FILE *fd;
     uint16_t **outData; //Array of IMAGE_H pointers to arrays of IMAGE_W 16-bit pixel values
     int outW;           //Width of the resulting file
     int outH;           //Height of the resulting file
@@ -46,7 +39,7 @@ static uint16_t infunc(JDEC *decoder, uint8_t *buf, uint16_t len)
 {
     //Read bytes from input file
     JpegDev *jd = (JpegDev *)decoder->device;
-    size_t chunksize;
+    size_t chunksize = 0;
     if (buf != NULL)
     {
         chunksize = fread(buf, 1, len, jd->fd);
@@ -80,6 +73,11 @@ static uint16_t outfunc(JDEC *decoder, void *bitmap, JRECT *rect)
 
 //Size of the work space for the jpeg decoder.
 #define WORKSZ 3100
+
+//Define the height and width of the jpeg file. Make sure this matches the actual jpeg
+//dimensions.
+#define IMAGE_W 256
+#define IMAGE_H 256
 
 //Decode the embedded image into pixel lines that can be used with the rest of the logic.
 esp_err_t decode_image(const char *filepath, uint16_t ***pixels)
@@ -127,7 +125,6 @@ esp_err_t decode_image(const char *filepath, uint16_t ***pixels)
     }
 
     //Populate fields of the JpegDev struct.
-    jd_data.inData = image_jpg_start;
     jd_data.outData = *pixels;
     jd_data.outW = IMAGE_W;
     jd_data.outH = IMAGE_H;
