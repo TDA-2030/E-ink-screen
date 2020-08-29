@@ -127,9 +127,14 @@ void Epd::SendData(unsigned char data) {
  *  @brief: Wait until the busy_pin goes LOW
  */
 void Epd::WaitUntilIdle(void) {
+    uint16_t timeout=50;
     while(DigitalRead(busy_pin) == HIGH) {      //LOW: idle, HIGH: busy
         DelayMs(100);
-    }      
+        if(--timeout == 0){
+            ESP_LOGW(TAG, "Wait epaper idle timeout");
+            break;
+        }
+    }
 }
 
 /**

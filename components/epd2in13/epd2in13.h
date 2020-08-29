@@ -35,6 +35,8 @@
 #define EPD_WIDTH       128
 #define EPD_HEIGHT      250
 
+#define COLORED     0
+#define UNCOLORED   1
 
 extern const unsigned char lut_full_update[];
 extern const unsigned char lut_partial_update[];
