@@ -182,6 +182,21 @@ void Paint::DrawStringAt(int x, int y, const char* text, sFONT* font, int colore
 }
 
 /**
+*  @brief: this displays a image on the frame buffer but not refresh
+*/
+void Paint::DrawImage(int x, int y, int width, int height, uint8_t **img)
+{
+
+    for (size_t j = 0; j < height; j++)
+    {
+        for (size_t i = 0; i < width; i++)
+        {
+            DrawPixel(x+i, y+j, img[j][i]);
+        }
+    }
+}
+
+/**
 *  @brief: this draws a line on the frame buffer
 */
 void Paint::DrawLine(int x0, int y0, int x1, int y1, int colored) {
