@@ -243,12 +243,73 @@ esp_err_t fm_get_info(fs_info_t **info)
     return ESP_ERR_NOT_FOUND;
 }
 
-esp_err_t fm_file_table_create(char *list[][16])
+
+esp_err_t fm_file_table_create(char ***list_out, uint16_t *files_number)
 {
+    DIR *p_dir = NULL;
+    struct dirent *p_dirent = NULL;
+    
+    p_dir = opendir(g_fs_info.base_path);
+
+    if (p_dir == NULL)
+    {
+        ESP_LOGE(TAG, "opendir error");
+        return ESP_FAIL;
+    }
+
+    (*files_number) = 0;
+    while ((p_dirent = readdir(p_dir)) != NULL)
+    {
+        if (p_dirent->d_type == DT_REG)
+        {
+            (*files_number)++;
+        }
+    }
+    ESP_LOGI(TAG, "find total files number: %d", (*files_number));
+
+    rewinddir(p_dir);
+    uint16_t index = 0;
+
+    *list_out = calloc((*files_number), sizeof(char *));
+    if (NULL == (*list_out))
+    {
+        goto _err;
+    }
+    for (size_t i = 0; i < (*files_number); i++)
+    {
+        (*list_out)[i] = malloc(CONFIG_SPIFFS_OBJ_NAME_LEN);
+        if(NULL == (*list_out)[i]){
+            ESP_LOGE(TAG, "malloc failed at %d", i);
+            fm_file_table_free(list_out, (*files_number));
+            goto _err;
+        }
+    }
+
+    while ((p_dirent = readdir(p_dir)) != NULL)
+    {
+        ESP_LOGI(TAG, "find file %s", p_dirent->d_name);
+        if (p_dirent->d_type == DT_REG)
+        {
+            strncpy((*list_out)[index], p_dirent->d_name, CONFIG_SPIFFS_OBJ_NAME_LEN-1);
+            (*list_out)[index][CONFIG_SPIFFS_OBJ_NAME_LEN-1] = '\0';
+            index++;
+        }
+    }
+    
+    closedir(p_dir);
     return ESP_OK;
+_err:
+    closedir(p_dir);
+
+    return ESP_FAIL;
 }
 
-esp_err_t fm_file_table_free(char *list[])
+esp_err_t fm_file_table_free(char ***list, uint16_t files_number)
 {
+    for (size_t i = 0; i < files_number; i++)
+    {
+        free((*list)[i]);
+    }
+    free((*list));
     return ESP_OK;
 }
