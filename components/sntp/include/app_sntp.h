@@ -7,7 +7,16 @@
 */
 
 #pragma once
+
+#ifdef __cplusplus 
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include "esp_err.h"
 
 void sntp_start(void);
+
+#ifdef __cplusplus 
+}
+#endif

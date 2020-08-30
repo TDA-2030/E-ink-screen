@@ -14,6 +14,10 @@
 #ifndef __CAPTIVE_PORTAL_H__
 #define __CAPTIVE_PORTAL_H__
 
+#ifdef __cplusplus 
+extern "C" {
+#endif
+
 #include "esp_err.h"
 
 /**
@@ -26,7 +30,7 @@
   *    - ESP_OK: succeed
   *    - ESP_FAIL: fail
   */
-esp_err_t captive_portal_start(char *ap_ssid, char *ap_pwd);
+esp_err_t captive_portal_start(const char *ap_ssid, const char *ap_pwd);
 
 /**
   * @brief Waiting for webpage configure to complete
@@ -38,5 +42,9 @@ esp_err_t captive_portal_start(char *ap_ssid, char *ap_pwd);
   *    - ESP_FAIL: fail
   */
 esp_err_t captive_portal_wait(uint32_t ticks_to_wait);
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif // __CAPTIVE_PORTAL_H__

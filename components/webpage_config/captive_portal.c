@@ -23,7 +23,7 @@
 static const char *TAG = "captive_portal";
 static bool g_configed=0;
 
-esp_err_t captive_portal_start(char *ap_ssid, char *ap_pwd)
+esp_err_t captive_portal_start(const char *ap_ssid, const char *ap_pwd)
 {
     esp_err_t ret;
     

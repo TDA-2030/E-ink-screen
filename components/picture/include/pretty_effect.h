@@ -7,6 +7,11 @@
 */
 
 #pragma once
+
+#ifdef __cplusplus 
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include "esp_err.h"
 
@@ -28,3 +33,7 @@ void pretty_effect_calc_lines(uint16_t *dest, int line, int frame, int linect);
  * @return ESP_OK on success, an error from the jpeg decoder otherwise.
  */
 esp_err_t pretty_effect_init(void);
+
+#ifdef __cplusplus 
+}
+#endif
