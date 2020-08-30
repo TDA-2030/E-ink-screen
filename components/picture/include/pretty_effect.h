@@ -34,6 +34,8 @@ typedef enum
 esp_err_t pretty_process(Jpegdata_t *jpg_data, pretty_method_t method);
 
 
+esp_err_t pretty_print_img(uint8_t **img, int width, int height);
+
 /**
  * @brief Initialize the effect
  *
