@@ -89,6 +89,13 @@ void setup()
     epd.DisplayFrame();
 
     vTaskDelay(pdMS_TO_TICKS(1000));
+
+    paint.SetWidth(EPD_WIDTH); // width should be the multiple of 8
+    paint.SetHeight(EPD_HEIGHT);
+    paint.Clear(UNCOLORED);
+    epd.SetFrameMemory(paint.GetImage(), 0, 0, EPD_WIDTH, EPD_HEIGHT);
+    epd.DisplayFrame();
+
     epd.SetLut(lut_partial_update);
     // if (epd.Init(lut_partial_update) != 0) {
     //     ESP_LOGE(TAG, "e-Paper init failed");
@@ -101,13 +108,14 @@ void setup()
    *  i.e. the next action of SetFrameMemory will set the other memory area
    *  therefore you have to set the frame memory and refresh the display twice.
    */
-    epd.SetFrameMemory(IMAGE_DATA);
-    epd.DisplayFrame();
-    epd.SetFrameMemory(IMAGE_DATA);
-    epd.DisplayFrame();
+    // epd.SetFrameMemory(IMAGE_DATA);
+    // epd.DisplayFrame();
+    // epd.SetFrameMemory(IMAGE_DATA);
+    // epd.DisplayFrame();
 
     paint.SetWidth(EPD_WIDTH); // width should be the multiple of 8
     paint.SetHeight(EPD_HEIGHT);
+    
 }
 
 #endif
@@ -126,17 +134,6 @@ extern "C" void app_main(void)
 
     ret = captive_portal_start("ESP_WEB_CONFIG", NULL);
     captive_portal_wait(portMAX_DELAY);
-    wifi_config_t wifi_config;
-    esp_wifi_get_config(ESP_IF_WIFI_STA, &wifi_config);
-
-    if (ret == ESP_OK)
-    {
-        ESP_LOGI(TAG, "WiFi config success! SSID:%s, PASSWORD:%s", wifi_config.sta.ssid, wifi_config.sta.password);
-    }
-    else
-    {
-        ESP_LOGE(TAG, "WiFi config fail! please check the SSID and password, SSID:%s, PASSWORD:%s", wifi_config.sta.ssid, wifi_config.sta.password);
-    }
 
     sntp_start();
 
@@ -147,6 +144,15 @@ extern "C" void app_main(void)
     struct tm timeinfo;
     char strftime_buf[64];
     setup();
+
+    char **file_list;
+    uint16_t f_l=0;
+    fm_file_table_create(&file_list, &f_l);
+    for (size_t i = 0; i < f_l; i++)
+    {
+        ESP_LOGI(TAG, "have file [%d:%p, %s]", i, file_list[i], file_list[i]);
+    }
+    fm_file_table_free(&file_list, f_l);
 
     const char list[8][32] = {
         "/spiffs/1.jpg",
@@ -163,37 +169,42 @@ extern "C" void app_main(void)
 
     while (1)
     {
+        heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
 
-        static Jpegdata_t jpg_data;
-        ret = decode_image(list[list_index], &jpg_data);
-        ESP_LOGI(TAG, "%s: h=%d, w=%d", list[list_index], jpg_data.outH, jpg_data.outW);
-        if (++list_index >= 8)
-            list_index = 0;
-        if (ESP_OK != ret)
-        {
-            continue;
-        }
-        if (jpg_data.outH > 250)
-            jpg_data.outH = 250;
-        if (jpg_data.outW > 128)
-            jpg_data.outW = 128;
+        // Jpegdata_t jpg_data;
+        // ret = decode_image(list[list_index], &jpg_data);
+        // ESP_LOGI(TAG, "%s: h=%d, w=%d", list[list_index], jpg_data.outH, jpg_data.outW);
+        // if (++list_index >= 8)
+        //     list_index = 0;
+        // if (ESP_OK != ret)
+        // {
+        //     continue;
+        // }
+        // if (jpg_data.outW > 250)
+        //     jpg_data.outW = 250;
+        // if (jpg_data.outH > 128)
+        //     jpg_data.outH = 128;
 
-        pretty_process(&jpg_data, PRETTY_METHOD_DITHERING);
-        ESP_LOGI(TAG, "stary to display");
-        paint.DrawImage(0, 0, (int)jpg_data.outW, (int)jpg_data.outH, (uint8_t **)jpg_data.outData);
-        epd.SetFrameMemory(paint.GetImage(), 0, 0, paint.GetWidth(), paint.GetHeight());
-        epd.DisplayFrame();
-        epd.SetFrameMemory(paint.GetImage(), 0, 0, paint.GetWidth(), paint.GetHeight());
-        epd.DisplayFrame();
-        ESP_LOGI(TAG, "display ok");
+        // // pretty_print_img((uint8_t **)jpg_data.outData, (int)jpg_data.outW, (int)jpg_data.outH);
+        // pretty_process(&jpg_data, PRETTY_METHOD_DITHERING);
+        
+        // ESP_LOGI(TAG, "stary to display");
+        // paint.SetRotate(ROTATE_90);
+        // paint.DrawImage(0, 0, (int)jpg_data.outW, (int)jpg_data.outH, (uint8_t **)jpg_data.outData);
+        // epd.SetFrameMemory(paint.GetImage(), 0, 0, paint.GetWidth(), paint.GetHeight());
+        // epd.DisplayFrame();
+        // epd.SetFrameMemory(paint.GetImage(), 0, 0, paint.GetWidth(), paint.GetHeight());
+        // epd.DisplayFrame();
+        // ESP_LOGI(TAG, "display ok");
 
-        decode_image_free(&jpg_data);
+        // decode_image_free(&jpg_data);
+        heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
 
         time(&now);
         localtime_r(&now, &timeinfo);
         strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
         ESP_LOGI(TAG, "The current date/time in Shanghai is: %s", strftime_buf);
-        vTaskDelay(pdMS_TO_TICKS(500));
+        vTaskDelay(pdMS_TO_TICKS(1500));
     }
 }
 
