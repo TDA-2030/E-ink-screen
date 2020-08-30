@@ -7,8 +7,26 @@
 */
 
 #pragma once
+
+#ifdef __cplusplus 
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include "esp_err.h"
+
+
+typedef uint8_t pixel_data_t;
+
+//Data that is passed from the decoder function to the infunc/outfunc functions.
+typedef struct
+{
+    FILE *fd;
+    pixel_data_t **outData; //Array of IMAGE_H pointers to arrays of IMAGE_W 16-bit pixel values
+    uint16_t outW;           //Width of the resulting file
+    uint16_t outH;           //Height of the resulting file
+} Jpegdata_t;
+
 
 /**
  * @brief Decode the jpeg ``image.jpg`` embedded into the program file into pixel data.
@@ -19,7 +37,11 @@
  *         - ESP_ERR_NO_MEM if out of memory
  *         - ESP_OK on succesful decode
  */
-esp_err_t decode_image(const char *filepath, uint16_t ***pixels);
+esp_err_t decode_image(const char *filepath, Jpegdata_t *pixels);
 
 
-esp_err_t decode_image_free(uint16_t ***pixels);
+esp_err_t decode_image_free(Jpegdata_t *pixels);
+
+#ifdef __cplusplus 
+}
+#endif
