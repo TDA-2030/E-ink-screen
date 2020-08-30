@@ -171,33 +171,31 @@ extern "C" void app_main(void)
     {
         heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
 
-        // Jpegdata_t jpg_data;
-        // ret = decode_image(list[list_index], &jpg_data);
-        // ESP_LOGI(TAG, "%s: h=%d, w=%d", list[list_index], jpg_data.outH, jpg_data.outW);
-        // if (++list_index >= 8)
-        //     list_index = 0;
-        // if (ESP_OK != ret)
-        // {
-        //     continue;
-        // }
-        // if (jpg_data.outW > 250)
-        //     jpg_data.outW = 250;
-        // if (jpg_data.outH > 128)
-        //     jpg_data.outH = 128;
+        Jpegdata_t jpg_data;
+        ret = decode_image(list[list_index], &jpg_data);
+        ESP_LOGI(TAG, "%s: h=%d, w=%d", list[list_index], jpg_data.outH, jpg_data.outW);
+        if (++list_index >= 8)
+            list_index = 0;
+        if (ESP_OK != ret)
+        {
+            continue;
+        }
+        uint16_t w = jpg_data.outW > 250 ? 250 : jpg_data.outW;
+        uint16_t h = jpg_data.outH > 128 ? 128 : jpg_data.outH;
 
-        // // pretty_print_img((uint8_t **)jpg_data.outData, (int)jpg_data.outW, (int)jpg_data.outH);
-        // pretty_process(&jpg_data, PRETTY_METHOD_DITHERING);
+        // // pretty_print_img((uint8_t **)jpg_data.outData, (int)w, (int)h);
+        pretty_process(&jpg_data, PRETTY_METHOD_DITHERING);
         
-        // ESP_LOGI(TAG, "stary to display");
-        // paint.SetRotate(ROTATE_90);
-        // paint.DrawImage(0, 0, (int)jpg_data.outW, (int)jpg_data.outH, (uint8_t **)jpg_data.outData);
-        // epd.SetFrameMemory(paint.GetImage(), 0, 0, paint.GetWidth(), paint.GetHeight());
-        // epd.DisplayFrame();
-        // epd.SetFrameMemory(paint.GetImage(), 0, 0, paint.GetWidth(), paint.GetHeight());
-        // epd.DisplayFrame();
-        // ESP_LOGI(TAG, "display ok");
+        ESP_LOGI(TAG, "stary to display");
+        paint.SetRotate(ROTATE_90);
+        paint.DrawImage(0, 0, (int)w, (int)h, (uint8_t **)jpg_data.outData);
+        epd.SetFrameMemory(paint.GetImage(), 0, 0, paint.GetWidth(), paint.GetHeight());
+        epd.DisplayFrame();
+        epd.SetFrameMemory(paint.GetImage(), 0, 0, paint.GetWidth(), paint.GetHeight());
+        epd.DisplayFrame();
+        ESP_LOGI(TAG, "display ok");
 
-        // decode_image_free(&jpg_data);
+        decode_image_free(&jpg_data);
         heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
 
         time(&now);
