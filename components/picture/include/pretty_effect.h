@@ -14,7 +14,14 @@ extern "C" {
 
 #include <stdint.h>
 #include "esp_err.h"
+#include "decode_image.h"
 
+typedef enum
+{
+    PRETTY_METHOD_BINARIZATION,
+    PRETTY_METHOD_DITHERING_Floyd,
+    PRETTY_METHOD_DITHERING,
+}pretty_method_t;
 
 /**
  * @brief Calculate the effect for a bunch of lines.
@@ -24,7 +31,7 @@ extern "C" {
  * @param frame Current frame, used for animation
  * @param linect Amount of lines to calculate
  */
-void pretty_effect_calc_lines(uint16_t *dest, int line, int frame, int linect);
+esp_err_t pretty_process(Jpegdata_t *jpg_data, pretty_method_t method);
 
 
 /**

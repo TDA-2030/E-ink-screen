@@ -38,7 +38,7 @@ static const char *TAG = "Eink";
   * update a partial display several times.
   * 1 byte = 8 pixels, therefore you have to set 8*N pixels at a time.
   */
-unsigned char image[EPD_WIDTH * EPD_HEIGHT / 8];
+static unsigned char image[EPD_WIDTH * EPD_HEIGHT / 8];
 Paint paint(image, EPD_WIDTH, EPD_HEIGHT);
 Epd epd;
 
@@ -178,54 +178,7 @@ extern "C" void app_main(void)
         if (jpg_data.outW > 128)
             jpg_data.outW = 128;
 
-        static char temp2char[17] = "@MNHQ&#UJ*x7^i;.";
-        static uint8_t BayerPattern[8][8] = {
-            0, 32, 8, 40, 2, 34, 10, 42,
-            48, 16, 56, 24, 50, 18, 58, 26,
-            12, 44, 4, 36, 14, 46, 6, 38,
-            60, 28, 52, 20, 62, 30, 54, 22,
-            3, 35, 11, 43, 1, 33, 9, 41,
-            51, 19, 59, 27, 49, 17, 57, 25,
-            15, 47, 7, 39, 13, 45, 5, 37,
-            63, 31, 55, 23, 61, 29, 53, 21};
-#define METHOD 1
-        for (size_t j = 0; j < jpg_data.outH; j++)
-        {
-            for (size_t i = 0; i < jpg_data.outW; i++)
-            {
-                // printf("%c", temp2char[jpg_data.outData[j][i] >> 4]);
-                pixel_data_t *pixel = &jpg_data.outData[j][i];
-                #if METHOD==1
-                if ((*pixel >> 2) > BayerPattern[j & 7][i & 7])
-                {
-                    *pixel = 1;
-                }
-                else
-                {
-                    *pixel = 0;
-                }
-                #elif METHOD==2
-                *pixel = *pixel > 128 ? 255 : 0;
-                #elif METHOD==3
-                pixel_data_t newPixel = *pixel > 128 ? 255 : 0;
-                int err = *pixel - newPixel;
-                *pixel = newPixel;
-                if(i == jpg_data.outW-1 || j == jpg_data.outH-1) continue;
-                if(i==0){
-                    jpg_data.outData[j][i+1] += err*7/16;
-                    jpg_data.outData[j+1][i] += err*7/16;
-                    jpg_data.outData[j+1][i+1] += err*2/16;
-                }else{
-                    jpg_data.outData[j][i+1] += err*7/16;
-                    jpg_data.outData[j+1][i] += err*5/16;
-                    jpg_data.outData[j+1][i-1] += err*3/16;
-                    jpg_data.outData[j+1][i+1] += err*1/16;
-                }
-                
-                #endif
-            }
-            // printf("\n");
-        }
+        pretty_process(&jpg_data, PRETTY_METHOD_DITHERING);
         ESP_LOGI(TAG, "stary to display");
         paint.DrawImage(0, 0, (int)jpg_data.outW, (int)jpg_data.outH, (uint8_t **)jpg_data.outData);
         epd.SetFrameMemory(paint.GetImage(), 0, 0, paint.GetWidth(), paint.GetHeight());
@@ -244,32 +197,3 @@ extern "C" void app_main(void)
     }
 }
 
-
-// for (let y = 0; y < height; y++) {
-//     for (let x = 0; x < width; x++) {
-//         const oldPixel = data[px(x, y)]
-//         const newPixel = oldPixel > 125 ? 255 : 0
-//         data[px(x, y)] = data[px(x, y) + 1] = data[px(x, y) + 2] = newPixel
-//         const quantError = oldPixel - newPixel
-
-//         data[px(x + 1, y    )] =
-//         data[px(x + 1, y    ) + 1] =
-//         data[px(x + 1, y    ) + 2] =
-//         data[px(x + 1, y    )] + quantError * 7 / 16
-
-//         data[px(x - 1, y + 1)] =
-//         data[px(x - 1, y + 1) + 1] =
-//         data[px(x - 1, y + 1) + 2] =
-//         data[px(x - 1, y + 1)] + quantError * 3 / 16
-
-//         data[px(x    , y + 1)] =
-//         data[px(x    , y + 1) + 1] =
-//         data[px(x    , y + 1) + 2] =
-//         data[px(x    , y + 1)] + quantError * 5 / 16
-
-//         data[px(x + 1, y + 1)] =
-//         data[px(x + 1, y + 1) + 1] =
-//         data[px(x + 1, y + 1) + 2] =
-//         data[px(x + 1, y + 1)] + quantError * 1 / 16
-//     }
-// }
