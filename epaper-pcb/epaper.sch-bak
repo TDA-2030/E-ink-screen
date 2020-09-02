@@ -94,9 +94,9 @@ F 3 "~" H 1000 4800 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 Text Label 5950 2850 0    50   ~ 0
-TXD
+TXD0
 Text Label 5950 3050 0    50   ~ 0
-RXD
+RXD0
 Text Label 4350 2750 0    50   ~ 0
 EN
 Wire Wire Line
@@ -106,9 +106,9 @@ Wire Wire Line
 Wire Wire Line
 	5800 3050 5950 3050
 Text Label 1200 4800 0    50   ~ 0
-TXD
+TXD0
 Text Label 1200 4900 0    50   ~ 0
-RXD
+RXD0
 Text Label 5950 2750 0    50   ~ 0
 BOOT
 Text Label 1200 4700 0    50   ~ 0
@@ -300,6 +300,10 @@ F3 "BUTTON" O L 6700 4950 50
 F4 "ENABLE" I L 6700 4750 50 
 F5 "USB_CHECK" O L 6700 5050 50 
 F6 "ADC_VOL" O L 6700 5200 50 
+F7 "CHIP_IO0" O R 7950 5100 50 
+F8 "CHIP_EN" O R 7950 5000 50 
+F9 "TXD" O R 7950 4900 50 
+F10 "RXD" I R 7950 4800 50 
 $EndSheet
 Wire Wire Line
 	5800 4850 6700 4850
@@ -379,7 +383,7 @@ U 1 1 5F588EDB
 P 1000 5800
 F 0 "J6" H 918 5375 50  0000 C CNN
 F 1 "JTAG" H 918 5466 50  0000 C CNN
-F 2 "" H 1000 5800 50  0001 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical" H 1000 5800 50  0001 C CNN
 F 3 "~" H 1000 5800 50  0001 C CNN
 	1    1000 5800
 	-1   0    0    1   
@@ -425,4 +429,20 @@ Wire Wire Line
 	4250 3050 4600 3050
 Wire Wire Line
 	6300 5200 6700 5200
+Text Label 8100 4900 0    50   ~ 0
+RXD0
+Text Label 8100 5100 0    50   ~ 0
+BOOT
+Text Label 8100 5000 0    50   ~ 0
+EN
+Text Label 8100 4800 0    50   ~ 0
+TXD0
+Wire Wire Line
+	7950 4800 8100 4800
+Wire Wire Line
+	7950 4900 8100 4900
+Wire Wire Line
+	7950 5000 8100 5000
+Wire Wire Line
+	7950 5100 8100 5100
 $EndSCHEMATC
