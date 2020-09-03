@@ -111,9 +111,9 @@ Text Label 1200 4900 0    50   ~ 0
 RXD0
 Text Label 5950 2750 0    50   ~ 0
 BOOT
-Text Label 1200 4700 0    50   ~ 0
-BOOT
 Text Label 1200 4600 0    50   ~ 0
+BOOT
+Text Label 1200 4700 0    50   ~ 0
 EN
 $Comp
 L power:GND #PWR0105
