@@ -1,37 +1,38 @@
 menu "Eink I/O setting"
     config EDPIO_RST_PIN
         int "RESET PIN"
-        default 12
+        default 5
         help
             Define gpio number of reset.
 
     config EDPIO_DC_PIN
         int "D/C PIN"
-        default 14
+        default 16
         help
             Define gpio number of d/c.
 
     config EDPIO_CS_PIN
         int "CS PIN"
-        default 15
+        default 21
         help
             Define gpio number of cs.
 
     config EDPIO_BUSY_PIN
         int "BUSY PIN"
-        default 35
+        default 17
         help
             Define gpio number of busy.
 
     config EDPIO_MOSI_PIN
         int "MOSI PIN"
-        default 26
+        default 18
         help
             Define gpio number of mosi.
 
     config EDPIO_SCLK_PIN
         int "SCLK PIN"
-        default 27
+        default 19
         help
             Define gpio number of sclk.
 endmenu
+    
