@@ -27,7 +27,8 @@
 
 #include "epd2in13.h"
 #include "epdpaint.h"
-#include "app_image_show.h"
+#include "app_show_image.h"
+#include "app_show_text.h"
 
 static const char *TAG = "Eink";
 
@@ -143,7 +144,10 @@ extern "C" void app_main(void)
     char strftime_buf[64];
     setup();
 
-    image_show_start(&paint, &epd);
+    app_show_text_init(&paint, &epd);
+
+    app_show_text(34,100, "兴", 16, 0);
+    // image_show_start(&paint, &epd);
 
     while (1)
     {

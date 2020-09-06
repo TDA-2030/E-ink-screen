@@ -3,7 +3,7 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := spi_master
+PROJECT_NAME := eink-screen
 
 include $(IDF_PATH)/make/project.mk
 

@@ -17,7 +17,6 @@
 
 #include "epd2in13.h"
 #include "epdpaint.h"
-#include "imagedata.h"
 
 static const char *TAG = "image show";
 
