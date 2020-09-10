@@ -7,14 +7,8 @@
 #include "freertos/task.h"
 #include "esp_system.h"
 #include "esp_log.h"
-#include "esp_wifi.h"
-#include "nvs_flash.h"
 
-#include "pretty_effect.h"
 #include "file_manage.h"
-#include "file_server.h"
-#include "decode_image.h"
-
 #include "epd2in13.h"
 #include "epdpaint.h"
 #include "cc936.h"
@@ -82,64 +76,56 @@ static int UnicodeToUtf8(char* pInput, char *pOutput)
 * 返回值：转换后的Unicode字符串的字节数，如果出错则返回-1
 **************************************************************************************************/
 //utf8转unicode
-static int Utf8ToUnicode(char* pInput, char* pOutput)
+static char* Utf8ToUnicode(char *pInput, char *pOutput)
 {
-	int outputSize = 0; //记录转换后的Unicode字符串的字节数
+    int outputSize = 0; //记录转换后的Unicode字符串的字节数
     char *p = pOutput;
  
-	while (*pInput)
-	{
-		if (*pInput > 0x00 && *pInput <= 0x7F) //处理单字节UTF8字符（英文字母、数字）
-		{
-			*pOutput = *pInput;
-			 pOutput++;
-			*pOutput = 0; //小端法表示，在高地址填补0
-		}
-		else if (((*pInput) & 0xE0) == 0xC0) //处理双字节UTF8字符
-		{
-			char high = *pInput;
-			pInput++;
-			char low = *pInput;
-			if ((low & 0xC0) != 0x80)  //检查是否为合法的UTF8字符表示
-			{
-				return -1; //如果不是则报错
-			}
- 
-			*pOutput = (high << 6) + (low & 0x3F);
-			pOutput++;
-			*pOutput = (high >> 2) & 0x07;
-		}
-		else if (((*pInput) & 0xF0) == 0xE0) //处理三字节UTF8字符
-		{
-			char high = *pInput;
-			pInput++;
-			char middle = *pInput;
-			pInput++;
-			char low = *pInput;
-			if (((middle & 0xC0) != 0x80) || ((low & 0xC0) != 0x80))
-			{
-				return -1;
-			}
-			*pOutput = (middle << 6) + (low & 0x3F);//取出middle的低两位与low的低6位，组合成unicode字符的低8位
-			pOutput++;
-			*pOutput = (high << 4) + ((middle >> 2) & 0x0F); //取出high的低四位与middle的中间四位，组合成unicode字符的高8位
-		}
-		else //对于其他字节数的UTF8字符不进行处理
-		{
-			return -1;
-		}
-		pInput ++;//处理下一个utf8字符
-		pOutput ++;
-		outputSize += 2;
-	}
+    if (*pInput > 0x00 && *pInput <= 0x7F) //处理单字节UTF8字符（英文字母、数字）
+    {
+        *pOutput = *pInput;
+            pOutput++;
+        *pOutput = 0; //小端法表示，在高地址填补0
+    }
+    else if (((*pInput) & 0xE0) == 0xC0) //处理双字节UTF8字符
+    {
+        char high = *pInput;
+        pInput++;
+        char low = *pInput;
+        if ((low & 0xC0) != 0x80)  //检查是否为合法的UTF8字符表示
+        {
+            ESP_LOGE(TAG, "utf-8 encounter illegal character");
+            return ++pInput;
+        }
 
-	//unicode字符串后面，有两个\0
-	*pOutput = 0;
-	 pOutput++;
-	*pOutput = 0;
+        *pOutput = (high << 6) + (low & 0x3F);
+        pOutput++;
+        *pOutput = (high >> 2) & 0x07;
+    }
+    else if (((*pInput) & 0xF0) == 0xE0) //处理三字节UTF8字符
+    {
+        char high = *pInput;
+        pInput++;
+        char middle = *pInput;
+        pInput++;
+        char low = *pInput;
+        if (((middle & 0xC0) != 0x80) || ((low & 0xC0) != 0x80))
+        {
+            ESP_LOGE(TAG, "utf-8 encounter illegal character");
+            return ++pInput;
+        }
+        *pOutput = (middle << 6) + (low & 0x3F);//取出middle的低两位与low的低6位，组合成unicode字符的低8位
+        pOutput++;
+        *pOutput = (high << 4) + ((middle >> 2) & 0x0F); //取出high的低四位与middle的中间四位，组合成unicode字符的高8位
+    }
+    else //对于其他字节数的UTF8字符不进行处理
+    {
+        ESP_LOGE(TAG, "Unsupport utf-8 character [%x]", *pInput);
+        return ++pInput;
+    }
+    outputSize += 2;
 
     // 字节顺序翻转
-    printf("fanzhuan\n");
     for (size_t i = 0; i < outputSize; i+=2)
     {  
         char t = p[i];
@@ -147,7 +133,7 @@ static int Utf8ToUnicode(char* pInput, char* pOutput)
         p[i+1] = t;
     }
     
-	return outputSize;
+    return ++pInput;
 }
 
 
@@ -156,7 +142,7 @@ static int Utf8ToUnicode(char* pInput, char* pOutput)
 //code 字符串的开始地址,GBK码
 //mat  数据存放地址 (size/8+((size%8)?1:0))*(size) bytes大小
 //size:字体大小
-static esp_err_t Get_HzMat(char *code, uint8_t *mat, uint16_t *len, uint8_t font_size)
+static esp_err_t Get_HzMat(const char *code, uint8_t *mat, uint16_t *len, uint8_t font_size)
 {
     uint8_t qh, ql;
     uint8_t i;
@@ -240,54 +226,110 @@ static esp_err_t Get_HzMat(char *code, uint8_t *mat, uint16_t *len, uint8_t font
 //font:汉字GBK码
 //size:字体大小
 //mode:0,正常显示,1,叠加显示
-extern "C" esp_err_t app_show_text(uint16_t x, uint16_t y, char *font, uint8_t size, uint8_t mode)
+extern "C" esp_err_t app_show_gbk_char(uint16_t x, uint16_t y, const char *gbk, uint8_t size, uint8_t mode)
 {
     esp_err_t ret;
     uint8_t temp, t, t1;
-    uint16_t y0 = y, font_len;
+    uint16_t x0 = x, font_len;
     uint8_t dzk[72];
     uint8_t csize = (size / 8 + ((size % 8) ? 1 : 0)) * (size); //得到字体一个字符对应点阵集所占的字节数
     if (size != 12 && size != 16 && size != 24)
         return ESP_FAIL;                 //不支持的size
 
-    char unicode[4], gbk[2];
-    ret = Utf8ToUnicode(font, unicode);
-    if (0 > ret){
-        ESP_LOGE(TAG, "Utf8ToUnicode failed");
-    }
-    font_unicode2gbk(unicode, gbk);
+   
     ret = Get_HzMat(gbk, dzk, &font_len, size); //得到相应大小的点阵数据
     if (ESP_OK != ret){
         return ESP_FAIL;
     }
 
-    g_paint->SetRotate(ROTATE_90);
+    
     for (t = 0; t < csize; t++)
     {
         temp = dzk[t]; //得到点阵数据
         for (t1 = 0; t1 < 8; t1++)
         {
             if (temp & 0x80){
-                g_paint->DrawPixel(x, y, 1);
-            }
-            else if (mode == 0){
                 g_paint->DrawPixel(x, y, 0);
             }
+            else if (mode == 0){
+                g_paint->DrawPixel(x, y, 1);
+            }
             temp <<= 1;
-            y++;
-            if ((y - y0) == size)
+            x++;
+            if ((x - x0) == size)
             {
-                y = y0;
-                x++;
+                x = x0;
+                y++;
                 break;
             }
         }
     }
+    
+    return ESP_OK;
+}
+
+//在指定位置开始显示一个字符串
+//支持自动换行
+//(x,y):起始坐标
+//width,height:区域
+//str  :字符串
+//size :字体大小
+//mode:0,非叠加方式;1,叠加方式
+extern "C" esp_err_t app_show_text_str(uint16_t x, uint16_t y, uint16_t width, uint16_t height, const char *string, uint8_t size, uint8_t mode)
+{
+    esp_err_t ret;
+    char *str = (char*)string;
+
+    char gbk[2];
+    char unicode[2];
+    
+    uint16_t x0=x;
+    uint16_t y0=y;
+    uint8_t bHz=0;  //字符或者中文
+
+    g_paint->SetRotate(ROTATE_90);
+
+    while(*str!=0)//数据未结束
+    {
+        str = Utf8ToUnicode(str, unicode);
+        font_unicode2gbk(unicode, gbk);
+
+        if(gbk[0] > 0x80){//中文
+            bHz=1;
+            if(x>(x0+width-size)) {//换行
+                y+=size;
+                x=x0;
+            }
+            if(y>(y0+height-size))break;//越界返回
+            app_show_gbk_char(x, y, gbk, size, mode);
+            x+=size;//下一个汉字偏移
+        } else { //字符
+            if(x>(x0+width-size/2))//换行
+            {
+                y+=size;
+                x=x0;
+            }
+            if(y>(y0+height-size))break;//越界返回      
+            if(gbk[1]==13)//换行符号
+            {         
+                y+=size;
+                x=x0;
+            }  
+            else {
+                
+                g_paint->DrawCharAt((int)x, (int)y, gbk[1], &Font16, COLORED);printf("%c\n", gbk[1]);
+                
+                // LCD_ShowChar(x,y,*str,size,mode);//有效部分写入 
+            }
+            x+=size/2; //字符,为全字的一半 
+        }
+    }
+    g_epd->SetFrameMemory(g_paint->GetImage(), 0, 0, g_paint->GetWidth(), g_paint->GetHeight());
+    g_epd->DisplayFrame();
     g_epd->SetFrameMemory(g_paint->GetImage(), 0, 0, g_paint->GetWidth(), g_paint->GetHeight());
     g_epd->DisplayFrame();
     return ESP_OK;
 }
-
 
 extern "C" esp_err_t app_show_text_init(Paint *paint, Epd *epd)
 {

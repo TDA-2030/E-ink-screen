@@ -213,7 +213,7 @@ int IfInit(void)
         .max_transfer_sz = 128,
     };
     spi_device_interface_config_t devcfg = {
-        .clock_speed_hz = 1 * 1000 * 1000,      //Clock out at 10 MHz
+        .clock_speed_hz = 5 * 1000 * 1000,      //Clock out at 10 MHz
         .mode = 0,                              //SPI mode 0
         .spics_io_num = CS_PIN,                 //CS pin
         .queue_size = 1,                        //We want to be able to queue 7 transactions at a time

@@ -28,7 +28,7 @@
 #include "epd2in13.h"
 #include "epdpaint.h"
 #include "app_show_image.h"
-#include "app_show_text.h"
+#include "show_text.h"
 
 static const char *TAG = "Eink";
 
@@ -66,27 +66,27 @@ void setup()
     paint.DrawStringAt(30, 4, "e-Paper Demo", &Font12, COLORED);
     epd.SetFrameMemory(paint.GetImage(), 0, 30, paint.GetWidth(), paint.GetHeight());
 
-    paint.SetWidth(64);
-    paint.SetHeight(64);
+    // paint.SetWidth(64);
+    // paint.SetHeight(64);
 
-    paint.Clear(UNCOLORED);
-    paint.DrawRectangle(0, 0, 40, 50, COLORED);
-    paint.DrawLine(0, 0, 40, 50, COLORED);
-    paint.DrawLine(40, 0, 0, 50, COLORED);
-    epd.SetFrameMemory(paint.GetImage(), 16, 60, paint.GetWidth(), paint.GetHeight());
+    // paint.Clear(UNCOLORED);
+    // paint.DrawRectangle(0, 0, 40, 50, COLORED);
+    // paint.DrawLine(0, 0, 40, 50, COLORED);
+    // paint.DrawLine(40, 0, 0, 50, COLORED);
+    // epd.SetFrameMemory(paint.GetImage(), 16, 60, paint.GetWidth(), paint.GetHeight());
 
-    paint.Clear(UNCOLORED);
-    paint.DrawCircle(32, 32, 30, COLORED);
-    epd.SetFrameMemory(paint.GetImage(), 72, 60, paint.GetWidth(), paint.GetHeight());
+    // paint.Clear(UNCOLORED);
+    // paint.DrawCircle(32, 32, 30, COLORED);
+    // epd.SetFrameMemory(paint.GetImage(), 72, 60, paint.GetWidth(), paint.GetHeight());
 
-    paint.Clear(UNCOLORED);
-    paint.DrawFilledRectangle(0, 0, 40, 50, COLORED);
-    epd.SetFrameMemory(paint.GetImage(), 16, 130, paint.GetWidth(), paint.GetHeight());
+    // paint.Clear(UNCOLORED);
+    // paint.DrawFilledRectangle(0, 0, 40, 50, COLORED);
+    // epd.SetFrameMemory(paint.GetImage(), 16, 130, paint.GetWidth(), paint.GetHeight());
 
-    paint.Clear(UNCOLORED);
-    paint.DrawFilledCircle(32, 32, 30, COLORED);
-    epd.SetFrameMemory(paint.GetImage(), 72, 130, paint.GetWidth(), paint.GetHeight());
-    epd.DisplayFrame();
+    // paint.Clear(UNCOLORED);
+    // paint.DrawFilledCircle(32, 32, 30, COLORED);
+    // epd.SetFrameMemory(paint.GetImage(), 72, 130, paint.GetWidth(), paint.GetHeight());
+    // epd.DisplayFrame();
 
     vTaskDelay(pdMS_TO_TICKS(1000));
 
@@ -146,7 +146,8 @@ extern "C" void app_main(void)
 
     app_show_text_init(&paint, &epd);
 
-    app_show_text(34,100, "兴", 16, 0);
+    app_show_text_str(50, 40, 200, 200, "xing开始显一个字符串12", 16, 1);
+    // app_show_text(34,100, "兴", 16, 0);
     // image_show_start(&paint, &epd);
 
     while (1)
@@ -156,6 +157,9 @@ extern "C" void app_main(void)
         localtime_r(&now, &timeinfo);
         strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
         ESP_LOGI(TAG, "The current date/time in Shanghai is: %s", strftime_buf);
+
+        app_show_text_str(0, 55, 200, 100, strftime_buf, 16, 1);
+
         vTaskDelay(pdMS_TO_TICKS(1500));
     }
 }
