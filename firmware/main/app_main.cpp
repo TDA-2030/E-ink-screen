@@ -27,6 +27,7 @@
 
 #include "epd2in13.h"
 #include "epdpaint.h"
+#include "my_button.h"
 #include "app_show_image.h"
 #include "show_text.h"
 
@@ -96,7 +97,7 @@ void setup()
     epd.SetFrameMemory(paint.GetImage(), 0, 0, EPD_WIDTH, EPD_HEIGHT);
     epd.DisplayFrame();
 
-    epd.SetLut(lut_partial_update);
+    // epd.SetLut(lut_partial_update);
     // if (epd.Init(lut_partial_update) != 0) {
     //     ESP_LOGE(TAG, "e-Paper init failed");
     //     return;
@@ -138,6 +139,7 @@ extern "C" void app_main(void)
 
     ESP_ERROR_CHECK(fm_init()); /* Initialize file storage */
     start_file_server();
+    my_button_init();
 
     time_t now;
     struct tm timeinfo;
@@ -147,7 +149,6 @@ extern "C" void app_main(void)
     app_show_text_init(&paint, &epd);
 
     app_show_text_str(50, 40, 200, 200, "xing开始显一个字符串12", 16, 1);
-    // app_show_text(34,100, "兴", 16, 0);
     // image_show_start(&paint, &epd);
 
     while (1)
@@ -160,7 +161,7 @@ extern "C" void app_main(void)
 
         app_show_text_str(0, 55, 200, 100, strftime_buf, 16, 1);
 
-        vTaskDelay(pdMS_TO_TICKS(1500));
+        vTaskDelay(pdMS_TO_TICKS(60000));
     }
 }
 
