@@ -508,7 +508,7 @@ esp_err_t wifiIinitialize(char *ap_ssid, char *ap_pwd, bool *configured)
     // initialize wifi stack
     wifi_init_config_t wifi_init_config = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&wifi_init_config));
-    ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+    ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_FLASH));
     ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
 
     bool cfg;
