@@ -27,7 +27,7 @@
 
 #include "epd2in13.h"
 #include "epdpaint.h"
-#include "my_button.h"
+#include "board.h"
 #include "app_show_image.h"
 #include "show_text.h"
 
@@ -123,6 +123,9 @@ void setup()
 extern "C" void app_main(void)
 {
     ESP_LOGI(TAG, "------------ system start ------------");
+    board_init();
+    board_power_set(true);
+
     //Initialize NVS
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
@@ -139,7 +142,7 @@ extern "C" void app_main(void)
 
     ESP_ERROR_CHECK(fm_init()); /* Initialize file storage */
     start_file_server();
-    my_button_init();
+    
 
     time_t now;
     struct tm timeinfo;
@@ -148,7 +151,7 @@ extern "C" void app_main(void)
 
     app_show_text_init(&paint, &epd);
 
-    app_show_text_str(50, 40, 200, 200, "xing开始显一个字符串12", 16, 1);
+    app_show_text_str(0, 40, 200, 200, "现在的时间是:", 16, 1);
     // image_show_start(&paint, &epd);
 
     while (1)

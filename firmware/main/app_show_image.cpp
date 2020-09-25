@@ -73,7 +73,7 @@ static void image_show_task(void *args)
         decode_image_free(&jpg_data);
         heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
 
-        vTaskDelay(pdMS_TO_TICKS(1500));
+        vTaskDelay(pdMS_TO_TICKS(30*1000));
 
         if(g_is_stop){
             break;
