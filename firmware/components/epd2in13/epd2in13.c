@@ -152,6 +152,20 @@ int Epd_Deinit(void) {
     return 0;
 }
 
+void Epd_Set_LUT(uint8_t Mode)
+{
+    SendCommand(0x32);
+    if(Mode == EPD_2IN13_FULL) {
+        for (int i = 0; i < 30; i++) {
+            SendData(EPD_2IN13_lut_full_update[i]);
+        }
+    } else if(Mode == EPD_2IN13_PART) {
+        for (int i = 0; i < 30; i++) {
+            SendData(EPD_2IN13_lut_partial_update[i]);
+        }
+    }
+}
+
 /**
  *  @brief: private function to specify the memory area for data R/W
  */

@@ -52,6 +52,7 @@ extern "C" {
 
 int  Epd_Init(uint8_t Mode);
 int  Epd_Deinit(void);
+void Epd_Set_LUT(uint8_t Mode);
 void Epd_SetFrameMemory_Area(
     const unsigned char* image_buffer,
     int x,
