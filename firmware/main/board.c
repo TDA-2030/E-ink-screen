@@ -1,9 +1,12 @@
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "driver/gpio.h"
 #include "esp_timer.h"
 #include "esp_system.h"
 #include "nvs_flash.h"
 #include "multi_button.h"
+#include "board.h"
 
 static const char *TAG = "button";
 static struct Button btn1;
@@ -34,10 +37,19 @@ static void BTN1_LONG_PRESS_START_Handler(void* btn)
 	esp_restart();
 }
 
+static void BTN1_power_off_cb(void *args)
+{
+    ESP_LOGW(TAG, "Power off!");
+    vTaskDelay(100 / portTICK_RATE_MS);
+    board_pa_ctrl(false);
+    board_power_set(false);
+}
+
 static esp_err_t my_button_init(void)
 {
 	button_init(&btn1, read_button1_GPIO, 1);
 	button_attach(&btn1, LONG_PRESS_START, BTN1_LONG_PRESS_START_Handler);
+    button_attach(&btn1, DOUBLE_CLICK, BTN1_power_off_cb);
 
 	button_start(&btn1);
 
@@ -65,8 +77,6 @@ static void periodic_led_callback(void* arg)
 
 void board_init(void)
 {
-    my_button_init();
-
     gpio_config_t io_conf;
     io_conf.intr_type = GPIO_INTR_DISABLE;
     io_conf.mode = GPIO_MODE_OUTPUT;
@@ -85,7 +95,10 @@ void board_init(void)
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
     gpio_config(&io_conf);
+
+    board_power_set(true);
     
+    my_button_init();
 
     const esp_timer_create_args_t periodic_timer_args = {
             .callback = &periodic_led_callback,

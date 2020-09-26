@@ -48,7 +48,6 @@ void app_main(void)
 {
     ESP_LOGI(TAG, "------------ system start ------------");
     board_init();
-    board_power_set(true);
 
     //Initialize NVS
     esp_err_t ret = nvs_flash_init();
