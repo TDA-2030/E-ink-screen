@@ -59,16 +59,34 @@ void app_main(void)
     }
     ESP_ERROR_CHECK(ret);
 
-    ret = captive_portal_start("ESP_WEB_CONFIG", NULL);
-    captive_portal_wait(portMAX_DELAY);
-
-
-    Epd_Init(EPD_2IN13_FULL);
+    Epd_Init(EPD_2IN13_PART);
     Paint_init(image, EPD_WIDTH, EPD_HEIGHT);
+    Paint_SetRotate(ROTATE_90);
     Paint_Clear(UNCOLORED);
+    Paint_DrawStringAt(0, 16, "start", &Font16, COLORED);
+    
+    bool is_configured;
+    char str_buf[128]={0};
+    captive_portal_start("ESP_WEB_CONFIG", NULL, &is_configured);
+    wifi_config_t wifi_config;
+    esp_wifi_get_config(ESP_IF_WIFI_STA, &wifi_config);
+
+    if (is_configured) {
+        sprintf(str_buf, "SSID:%s, PASSWORD:%s", wifi_config.sta.ssid, wifi_config.sta.password);
+        Paint_DrawStringAt(0, 16, str_buf, &Font12, COLORED);
+    } else {
+        sprintf(str_buf, "WiFi not configured, started a configuration webpage");
+        Paint_DrawStringAt(0, 32, str_buf, &Font12, COLORED);
+    }
     Epd_SetFrameMemory_Area(Paint_GetImage(), 0, 0, EPD_WIDTH, EPD_HEIGHT);
     Epd_DisplayFrame();
-    Paint_SetRotate(ROTATE_90);
+    captive_portal_wait(portMAX_DELAY);
+
+    Paint_Clear(UNCOLORED);
+    Epd_Set_LUT(EPD_2IN13_FULL);
+    Epd_SetFrameMemory_Area(Paint_GetImage(), 0, 0, EPD_WIDTH, EPD_HEIGHT);
+    Epd_DisplayFrame();
+    
 
     sntp_start();
 
