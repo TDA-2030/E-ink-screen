@@ -10,6 +10,12 @@
 
 static const char *TAG = "ADC audio";
 
+#define ADC_AUDIO_CHECK(a, str, ret_val)                          \
+    if (!(a))                                                     \
+    {                                                             \
+        ESP_LOGE(TAG, "%s(%d): %s", __FUNCTION__, __LINE__, str); \
+        return (ret_val);                                         \
+    }
 
 //i2s number
 #define EXAMPLE_I2S_NUM           (0)
@@ -21,12 +27,28 @@ static const char *TAG = "ADC audio";
 //I2S channel number
 #define EXAMPLE_I2S_CHANNEL_NUM   ((EXAMPLE_I2S_FORMAT < I2S_CHANNEL_FMT_ONLY_RIGHT) ? (2) : (1))
 
+#define VOLUME_0DB          (16)
 
+
+static uint8_t *i2s_write_buff;
+static int32_t g_volume;
 
 
 esp_err_t adc_audio_set_param(int rate, int bits, int ch)
 {
     i2s_set_clk(EXAMPLE_I2S_NUM, rate, bits, ch);
+    return ESP_OK;
+}
+
+esp_err_t adc_audio_set_volume(int8_t volume)
+{
+    if (volume < 0) {
+        ADC_AUDIO_CHECK(-volume <= VOLUME_0DB, "Volume out of range", ESP_ERR_INVALID_ARG);
+    } else {
+        ADC_AUDIO_CHECK(volume <= VOLUME_0DB, "Volume out of range", ESP_ERR_INVALID_ARG);
+    }
+
+    g_volume = volume + VOLUME_0DB;
     return ESP_OK;
 }
 
@@ -42,7 +64,8 @@ static int example_i2s_dac_data_scale(uint8_t *d_buff, uint8_t *s_buff, uint32_t
     len >>= 1;
     uint16_t *b16 = (uint16_t *)s_buff;
     for (int i = 0; i < len; i++) {
-        int32_t t = b16[i] ;
+        int16_t t = b16[i] ;
+        t = t * g_volume / VOLUME_0DB;
         t = t + 0x7fff;
         d_buff[j++] = 0;
         d_buff[j++] = t >> 8;
@@ -59,7 +82,7 @@ static int example_i2s_dac_data_scale(uint8_t *d_buff, uint8_t *s_buff, uint32_t
 #endif
 }
 
-static uint8_t *i2s_write_buff;
+
 
 
 esp_err_t adc_audio_write(uint8_t *write_buff, size_t play_len, size_t *bytes_written, TickType_t ticks_to_wait)
@@ -90,6 +113,8 @@ esp_err_t adc_audio_init()
     i2s_set_dac_mode(I2S_DAC_CHANNEL_LEFT_EN);
     //init ADC pad
     //  i2s_set_adc_mode(I2S_ADC_UNIT, I2S_ADC_CHANNEL);
+
+    adc_audio_set_volume(0);
 
     i2s_write_buff = (uint8_t *) calloc(16 * 1024, sizeof(char));
 

@@ -25,6 +25,8 @@ extern "C" {
 
 esp_err_t adc_audio_init();
 
+esp_err_t adc_audio_set_volume(int8_t volume);
+
 esp_err_t adc_audio_set_param(int rate, int bits, int ch);
 
 esp_err_t adc_audio_write(uint8_t* write_buff, size_t play_len, size_t *bytes_written, TickType_t ticks_to_wait);

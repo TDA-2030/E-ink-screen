@@ -94,6 +94,7 @@ void app_main(void)
     
     board_pa_ctrl(true);
     mp3_player_start("/spiffs/01.mp3");
+    mp3_player_set_volume(-8);
     // mp3_player_wait(portMAX_DELAY);
     // board_pa_ctrl(false);
 

@@ -281,5 +281,10 @@ esp_err_t mp3_player_wait(TickType_t xTicksToWait)
 
 esp_err_t mp3_player_set_volume(int8_t volume)
 {
+#ifdef PLAY_USE_DAC
+    return adc_audio_set_volume(volume);
+#else
     return pwm_audio_set_volume(volume);
+#endif
+
 }
