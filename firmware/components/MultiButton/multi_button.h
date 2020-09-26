@@ -13,7 +13,7 @@
 #define TICKS_INTERVAL    5	//ms
 #define DEBOUNCE_TICKS    3	//MAX 8
 #define SHORT_TICKS       (300 /TICKS_INTERVAL)
-#define LONG_TICKS        (1000 /TICKS_INTERVAL)
+#define LONG_TICKS        (10000 /TICKS_INTERVAL)
 
 
 typedef void (*BtnCallback)(void*);
