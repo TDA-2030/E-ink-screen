@@ -23,13 +23,14 @@
 static const char *TAG = "captive_portal";
 static bool g_configed=0;
 
-esp_err_t captive_portal_start(const char *ap_ssid, const char *ap_pwd)
+esp_err_t captive_portal_start(const char *ap_ssid, const char *ap_pwd, bool *configured)
 {
     esp_err_t ret;
     
 
     ESP_LOGI(TAG, "Setup Wifi ...");
     wifiIinitialize(ap_ssid, ap_pwd, &g_configed);
+    *configured = g_configed;
     if (1 == g_configed)
     {
         ESP_LOGI(TAG, "WiFi already configed");

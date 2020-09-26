@@ -25,12 +25,13 @@ extern "C" {
   *
   * @param ap_ssid  SSID of softap, if use default SSID, set it as NULL
   * @param ap_pwd  password of softap, if no need password, set it as NULL
+  * @param configured Is it configured
   *
   * @return
   *    - ESP_OK: succeed
   *    - ESP_FAIL: fail
   */
-esp_err_t captive_portal_start(const char *ap_ssid, const char *ap_pwd);
+esp_err_t captive_portal_start(const char *ap_ssid, const char *ap_pwd, bool *configured);
 
 /**
   * @brief Waiting for webpage configure to complete
