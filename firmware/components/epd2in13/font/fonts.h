@@ -47,11 +47,11 @@
 /* Includes ------------------------------------------------------------------*/
 #include <stdint.h>
 
-struct sFONT {
+typedef struct {
   const uint8_t *table;
   uint16_t Width;
   uint16_t Height;
-};
+} sFONT;
 
 extern sFONT Font24;
 extern sFONT Font20;

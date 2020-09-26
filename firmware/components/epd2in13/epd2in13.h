@@ -27,7 +27,19 @@
 #ifndef EPD2IN13_H
 #define EPD2IN13_H
 
+#ifdef __cplusplus 
+extern "C" {
+#endif
+
 #include "epdif.h"
+
+// Display resolution
+#define EPD_2IN13_WIDTH       122
+#define EPD_2IN13_HEIGHT      250
+
+#define EPD_2IN13_FULL			0
+#define EPD_2IN13_PART			1
+
 
 // Display resolution
 /* the resolution is 122x250 in fact */
@@ -38,46 +50,23 @@
 #define COLORED     0
 #define UNCOLORED   1
 
-extern const unsigned char lut_full_update[];
-extern const unsigned char lut_partial_update[];
+int  Epd_Init(uint8_t Mode);
+int  Epd_Deinit(void);
+void Epd_SetFrameMemory_Area(
+    const unsigned char* image_buffer,
+    int x,
+    int y,
+    int image_width,
+    int image_height
+);
+void Epd_SetFrameMemory(const unsigned char* image_buffer);
+void Epd_ClearFrameMemory(unsigned char color);
+void Epd_DisplayFrame(void);
+void Epd_Sleep(void);
 
-class Epd  {
-public:
-    unsigned long width;
-    unsigned long height;
-
-    Epd();
-    ~Epd();
-    int  Init(const unsigned char* lut);
-    int  Deinit(void);
-    void SendCommand(unsigned char command);
-    void SendData(unsigned char data);
-    void WaitUntilIdle(void);
-    void Reset(void);
-    void SetFrameMemory(
-        const unsigned char* image_buffer,
-        int x,
-        int y,
-        int image_width,
-        int image_height
-    );
-    void SetFrameMemory(const unsigned char* image_buffer);
-    void ClearFrameMemory(unsigned char color);
-    void DisplayFrame(void);
-    void Sleep(void);
-    void SetLut(const unsigned char* lut);
-
-private:
-    unsigned int reset_pin;
-    unsigned int dc_pin;
-    unsigned int cs_pin;
-    unsigned int busy_pin;
-    const unsigned char* lut;
-
-    
-    void SetMemoryArea(int x_start, int y_start, int x_end, int y_end);
-    void SetMemoryPointer(int x, int y);
-};
+#ifdef __cplusplus 
+}
+#endif
 
 #endif /* EPD2IN13_H */
 

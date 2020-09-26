@@ -10,7 +10,7 @@ extern "C" {
 #include "epdpaint.h"
 
 
-esp_err_t app_show_text_init(Paint *paint, Epd *epd);
+esp_err_t app_show_text_init(void);
 
 esp_err_t app_show_text(uint16_t x, uint16_t y, char *font, uint8_t size, uint8_t mode);
 

@@ -53,21 +53,46 @@ static const char *TAG = "edp";
 #define SET_RAM_Y_ADDRESS_COUNTER                   0x4F
 #define TERMINATE_FRAME_READ_WRITE                  0xFF
 
-
-
-Epd::~Epd() {
+static const unsigned char EPD_2IN13_lut_full_update[] = {
+    0x22, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x11,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E,
+    0x01, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-Epd::Epd() {
-    reset_pin = RST_PIN;
-    dc_pin = DC_PIN;
-    cs_pin = CS_PIN;
-    busy_pin = BUSY_PIN;
-    width = EPD_WIDTH;
-    height = EPD_HEIGHT;
+static const unsigned char EPD_2IN13_lut_partial_update[] = {
+    0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x0F, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-int Epd::Init(const unsigned char* lut) {
+static uint16_t g_width = EPD_WIDTH;
+static uint16_t g_height = EPD_HEIGHT;
+
+
+static void SendCommand(unsigned char command) {
+    DigitalWrite(DC_PIN, LOW);
+    SpiTransfer(command);
+}
+
+static void SendData(unsigned char data) {
+    DigitalWrite(DC_PIN, HIGH);
+    SpiTransfer(data);
+}
+
+static void WaitUntilIdle(void) {
+    uint16_t timeout=50;
+    while(DigitalRead(BUSY_PIN) == HIGH) {      //LOW: idle, HIGH: busy
+        DelayMs(100);
+        if(--timeout == 0){
+            ESP_LOGW(TAG, "Wait epaper idle timeout");
+            break;
+        }
+    }
+}
+
+int Epd_Init(uint8_t Mode) {
     ESP_LOGI(TAG, "e-Paper init ");
     /* this calls the peripheral hardware interface, see epdif */
     if (IfInit() != 0) {
@@ -75,10 +100,16 @@ int Epd::Init(const unsigned char* lut) {
         return -1;
     }
     /* EPD hardware init start */
-    Reset();
+    DigitalWrite(RST_PIN, HIGH);
+    DelayMs(200);
+    DigitalWrite(RST_PIN, LOW);                //module reset    
+    DelayMs(200);
+    DigitalWrite(RST_PIN, HIGH);
+    DelayMs(200);
+
     SendCommand(DRIVER_OUTPUT_CONTROL);
-    SendData((EPD_HEIGHT - 1) & 0xFF);
-    SendData(((EPD_HEIGHT - 1) >> 8) & 0xFF);
+    SendData((EPD_2IN13_HEIGHT - 1) & 0xFF);
+    SendData(((EPD_2IN13_HEIGHT - 1) >> 8) & 0xFF);
     SendData(0x00);                     // GD = 0; SM = 0; TB = 0;
     SendCommand(BOOSTER_SOFT_START_CONTROL);
     SendData(0xD7);
@@ -90,14 +121,28 @@ int Epd::Init(const unsigned char* lut) {
     SendData(0x1A);                     // 4 dummy lines per gate
     SendCommand(SET_GATE_TIME);
     SendData(0x08);                     // 2us per line
+
+    SendCommand(0X3C);	// BORDER_WAVEFORM_CONTROL
+    SendData(0x63);
     SendCommand(DATA_ENTRY_MODE_SETTING);
     SendData(0x03);                     // X increment; Y increment
-    SetLut(lut);
-    /* EPD hardware init end */
+
+    // //set the look-up table register
+    SendCommand(0x32);
+    if(Mode == EPD_2IN13_FULL) {
+        for (int i = 0; i < 30; i++) {
+            SendData(EPD_2IN13_lut_full_update[i]);
+        }
+    } else if(Mode == EPD_2IN13_PART) {
+        for (int i = 0; i < 30; i++) {
+            SendData(EPD_2IN13_lut_partial_update[i]);
+        }
+    }
+
     return 0;
 }
 
-int Epd::Deinit(void) {
+int Epd_Deinit(void) {
     ESP_LOGI(TAG, "e-Paper deinit ");
     if (IfDeinit() != 0) {
         ESP_LOGE(TAG, "ifdeinit failed");
@@ -108,64 +153,38 @@ int Epd::Deinit(void) {
 }
 
 /**
- *  @brief: basic function for sending commands
+ *  @brief: private function to specify the memory area for data R/W
  */
-void Epd::SendCommand(unsigned char command) {
-    DigitalWrite(dc_pin, LOW);
-    SpiTransfer(command);
+static void Epd_SetMemoryArea(int x_start, int y_start, int x_end, int y_end) {
+    SendCommand(SET_RAM_X_ADDRESS_START_END_POSITION);
+    /* x point must be the multiple of 8 or the last 3 bits will be ignored */
+    SendData((x_start >> 3) & 0xFF);
+    SendData((x_end >> 3) & 0xFF);
+    SendCommand(SET_RAM_Y_ADDRESS_START_END_POSITION);
+    SendData(y_start & 0xFF);
+    SendData((y_start >> 8) & 0xFF);
+    SendData(y_end & 0xFF);
+    SendData((y_end >> 8) & 0xFF);
 }
 
 /**
- *  @brief: basic function for sending data
+ *  @brief: private function to specify the start point for data R/W
  */
-void Epd::SendData(unsigned char data) {
-    DigitalWrite(dc_pin, HIGH);
-    SpiTransfer(data);
-}
-
-/**
- *  @brief: Wait until the busy_pin goes LOW
- */
-void Epd::WaitUntilIdle(void) {
-    uint16_t timeout=50;
-    while(DigitalRead(busy_pin) == HIGH) {      //LOW: idle, HIGH: busy
-        DelayMs(100);
-        if(--timeout == 0){
-            ESP_LOGW(TAG, "Wait epaper idle timeout");
-            break;
-        }
-    }
-}
-
-/**
- *  @brief: module reset.
- *          often used to awaken the module in deep sleep,
- *          see Epd::Sleep();
- */
-void Epd::Reset(void) {
-    DigitalWrite(reset_pin, LOW);                //module reset    
-    DelayMs(200);
-    DigitalWrite(reset_pin, HIGH);
-    DelayMs(200);    
-}
-
-/**
- *  @brief: set the look-up table register
- */
-void Epd::SetLut(const unsigned char* lut) {
-    this->lut = lut;
-    SendCommand(WRITE_LUT_REGISTER);
-    /* the length of look-up table is 30 bytes */
-    for (int i = 0; i < 30; i++) {
-        SendData(this->lut[i]);
-    }
+static void Epd_SetMemoryPointer(int x, int y) {
+    SendCommand(SET_RAM_X_ADDRESS_COUNTER);
+    /* x point must be the multiple of 8 or the last 3 bits will be ignored */
+    SendData((x >> 3) & 0xFF);
+    SendCommand(SET_RAM_Y_ADDRESS_COUNTER);
+    SendData(y & 0xFF);
+    SendData((y >> 8) & 0xFF);
+    WaitUntilIdle();
 }
 
 /**
  *  @brief: put an image buffer to the frame memory.
  *          this won't update the display.
  */
-void Epd::SetFrameMemory(
+void Epd_SetFrameMemory_Area(
     const unsigned char* image_buffer,
     int x,
     int y,
@@ -185,20 +204,20 @@ void Epd::SetFrameMemory(
     /* x point must be the multiple of 8 or the last 3 bits will be ignored */
     x &= 0xF8;
     image_width &= 0xF8;
-    if (x + image_width >= this->width) {
-        x_end = this->width - 1;
+    if (x + image_width >= g_width) {
+        x_end = g_width - 1;
     } else {
         x_end = x + image_width - 1;
     }
-    if (y + image_height >= this->height) {
-        y_end = this->height - 1;
+    if (y + image_height >= g_height) {
+        y_end = g_height - 1;
     } else {
         y_end = y + image_height - 1;
     }
-    SetMemoryArea(x, y, x_end, y_end);
+    Epd_SetMemoryArea(x, y, x_end, y_end);
     /* set the frame memory line by line */
     for (int j = y; j <= y_end; j++) {
-        SetMemoryPointer(x, j);
+        Epd_SetMemoryPointer(x, j);
         SendCommand(WRITE_RAM);
         for (int i = x / 8; i <= x_end / 8; i++) {
             SendData(image_buffer[(i - x / 8) + (j - y) * (image_width / 8)]);
@@ -223,14 +242,14 @@ void Epd::SetFrameMemory(
  *          you have to use the function pgm_read_byte to read buffers 
  *          from the flash).
  */
-void Epd::SetFrameMemory(const unsigned char* image_buffer) {
-    SetMemoryArea(0, 0, this->width - 1, this->height - 1);
+void Epd_SetFrameMemory(const unsigned char* image_buffer) {
+    Epd_SetMemoryArea(0, 0, g_width - 1, g_height - 1);
     /* set the frame memory line by line */
-    for (int j = 0; j < this->height; j++) {
-        SetMemoryPointer(0, j);
+    for (int j = 0; j < g_height; j++) {
+        Epd_SetMemoryPointer(0, j);
         SendCommand(WRITE_RAM);
-        for (int i = 0; i < this->width / 8; i++) {
-            SendData(*(&image_buffer[i + j * (this->width / 8)]));
+        for (int i = 0; i < g_width / 8; i++) {
+            SendData(*(&image_buffer[i + j * (g_width / 8)]));
         }
     }
 }
@@ -239,13 +258,13 @@ void Epd::SetFrameMemory(const unsigned char* image_buffer) {
  *  @brief: clear the frame memory with the specified color.
  *          this won't update the display.
  */
-void Epd::ClearFrameMemory(unsigned char color) {
-    SetMemoryArea(0, 0, this->width - 1, this->height - 1);
+void Epd_ClearFrameMemory(unsigned char color) {
+    Epd_SetMemoryArea(0, 0, g_width - 1, g_height - 1);
     /* set the frame memory line by line */
-    for (int j = 0; j < this->height; j++) {
-        SetMemoryPointer(0, j);
+    for (int j = 0; j < g_height; j++) {
+        Epd_SetMemoryPointer(0, j);
         SendCommand(WRITE_RAM);
-        for (int i = 0; i < this->width / 8; i++) {
+        for (int i = 0; i < g_width / 8; i++) {
             SendData(color);
         }
     }
@@ -258,7 +277,7 @@ void Epd::ClearFrameMemory(unsigned char color) {
  *          the the next action of SetFrameMemory or ClearFrame will 
  *          set the other memory area.
  */
-void Epd::DisplayFrame(void) {
+void Epd_DisplayFrame(void) {
     SendCommand(DISPLAY_UPDATE_CONTROL_2);
     SendData(0xC4);
     SendCommand(MASTER_ACTIVATION);
@@ -266,60 +285,20 @@ void Epd::DisplayFrame(void) {
     WaitUntilIdle();
 }
 
-/**
- *  @brief: private function to specify the memory area for data R/W
- */
-void Epd::SetMemoryArea(int x_start, int y_start, int x_end, int y_end) {
-    SendCommand(SET_RAM_X_ADDRESS_START_END_POSITION);
-    /* x point must be the multiple of 8 or the last 3 bits will be ignored */
-    SendData((x_start >> 3) & 0xFF);
-    SendData((x_end >> 3) & 0xFF);
-    SendCommand(SET_RAM_Y_ADDRESS_START_END_POSITION);
-    SendData(y_start & 0xFF);
-    SendData((y_start >> 8) & 0xFF);
-    SendData(y_end & 0xFF);
-    SendData((y_end >> 8) & 0xFF);
-}
 
-/**
- *  @brief: private function to specify the start point for data R/W
- */
-void Epd::SetMemoryPointer(int x, int y) {
-    SendCommand(SET_RAM_X_ADDRESS_COUNTER);
-    /* x point must be the multiple of 8 or the last 3 bits will be ignored */
-    SendData((x >> 3) & 0xFF);
-    SendCommand(SET_RAM_Y_ADDRESS_COUNTER);
-    SendData(y & 0xFF);
-    SendData((y >> 8) & 0xFF);
-    WaitUntilIdle();
-}
 
 /**
  *  @brief: After this command is transmitted, the chip would enter the 
  *          deep-sleep mode to save power. 
  *          The deep sleep mode would return to standby by hardware reset. 
- *          You can use Epd::Init() to awaken
+ *          You can use Epd_Init() to awaken
  */
-void Epd::Sleep() {
+void Epd_Sleep() {
     SendCommand(DEEP_SLEEP_MODE);
     WaitUntilIdle();
 }
 
-const unsigned char lut_full_update[] =
-{
-    0x22, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x11, 
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-    0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 
-    0x01, 0x00, 0x00, 0x00, 0x00, 0x00
-};
 
-const unsigned char lut_partial_update[] =
-{
-    0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-    0x0F, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
 
 
 /* END OF FILE */

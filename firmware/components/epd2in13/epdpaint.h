@@ -27,6 +27,10 @@
 #ifndef EPDPAINT_H
 #define EPDPAINT_H
 
+#ifdef __cplusplus 
+extern "C" {
+#endif
+
 // Display orientation
 #define ROTATE_0            0
 #define ROTATE_90           1
@@ -39,37 +43,27 @@
 #include "fonts.h"
 #include "epdif.h"
 
-class Paint {
-public:
-    Paint(unsigned char* image, int width, int height);
-    ~Paint();
-    void Clear(int colored);
-    int  GetWidth(void);
-    void SetWidth(int width);
-    int  GetHeight(void);
-    void SetHeight(int height);
-    int  GetRotate(void);
-    void SetRotate(int rotate);
-    unsigned char* GetImage(void);
-    void DrawAbsolutePixel(int x, int y, int colored);
-    void DrawPixel(int x, int y, int colored);
-    void DrawCharAt(int x, int y, char ascii_char, sFONT* font, int colored);
-    void DrawStringAt(int x, int y, const char* text, sFONT* font, int colored);
-    void DrawLine(int x0, int y0, int x1, int y1, int colored);
-    void DrawHorizontalLine(int x, int y, int width, int colored);
-    void DrawVerticalLine(int x, int y, int height, int colored);
-    void DrawRectangle(int x0, int y0, int x1, int y1, int colored);
-    void DrawFilledRectangle(int x0, int y0, int x1, int y1, int colored);
-    void DrawCircle(int x, int y, int radius, int colored);
-    void DrawFilledCircle(int x, int y, int radius, int colored);
-    void DrawImage(int x, int y, int width, int height, uint8_t **img);
+void Paint_init(unsigned char* image, int width, int height);
+uint8_t *Paint_GetImage(void);
+void Paint_Clear(int colored);
+int  Paint_GetRotate(void);
+void Paint_SetRotate(int rotate);
+void Paint_DrawAbsolutePixel(int x, int y, int colored);
+void Paint_DrawPixel(int x, int y, int colored);
+void Paint_DrawCharAt(int x, int y, char ascii_char, sFONT* font, int colored);
+void Paint_DrawStringAt(int x, int y, const char* text, sFONT* font, int colored);
+void Paint_DrawLine(int x0, int y0, int x1, int y1, int colored);
+void Paint_DrawHorizontalLine(int x, int y, int width, int colored);
+void Paint_DrawVerticalLine(int x, int y, int height, int colored);
+void Paint_DrawRectangle(int x0, int y0, int x1, int y1, int colored);
+void Paint_DrawFilledRectangle(int x0, int y0, int x1, int y1, int colored);
+void Paint_DrawCircle(int x, int y, int radius, int colored);
+void Paint_DrawFilledCircle(int x, int y, int radius, int colored);
+void Paint_DrawImage(int x, int y, int width, int height, uint8_t **img);
 
-private:
-    unsigned char* image;
-    int width;
-    int height;
-    int rotate;
-};
+#ifdef __cplusplus 
+}
+#endif
 
 #endif
 

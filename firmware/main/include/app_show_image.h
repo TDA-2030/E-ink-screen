@@ -9,7 +9,7 @@ extern "C" {
 #include "epd2in13.h"
 #include "epdpaint.h"
 
-esp_err_t image_show_start(Paint *paint, Epd *epd);
+esp_err_t image_show_start(void);
 
 esp_err_t image_show_stop(void);
 

@@ -21,8 +21,7 @@
 static const char *TAG = "image show";
 
 static bool g_is_stop = 0;
-static Paint *g_paint;
-static Epd *g_epd;
+
 
 static void image_show_task(void *args)
 {
@@ -62,12 +61,12 @@ static void image_show_task(void *args)
         pretty_process(&jpg_data, PRETTY_METHOD_DITHERING);
         
         ESP_LOGI(TAG, "stary to display");
-        g_paint->SetRotate(ROTATE_90);
-        g_paint->DrawImage(0, 0, (int)w, (int)h, (uint8_t **)jpg_data.outData);
-        g_epd->SetFrameMemory(g_paint->GetImage(), 0, 0, g_paint->GetWidth(), g_paint->GetHeight());
-        g_epd->DisplayFrame();
-        g_epd->SetFrameMemory(g_paint->GetImage(), 0, 0, g_paint->GetWidth(), g_paint->GetHeight());
-        g_epd->DisplayFrame();
+        Paint_SetRotate(ROTATE_90);
+        Paint_DrawImage(0, 0, (int)w, (int)h, (uint8_t **)jpg_data.outData);
+        Epd_SetFrameMemory_Area(Paint_GetImage(), 0, 0, EPD_WIDTH, EPD_HEIGHT);
+        Epd_DisplayFrame();
+        Epd_SetFrameMemory_Area(Paint_GetImage(), 0, 0, EPD_WIDTH, EPD_HEIGHT);
+        Epd_DisplayFrame();
         ESP_LOGI(TAG, "display ok");
 
         decode_image_free(&jpg_data);
@@ -84,15 +83,14 @@ static void image_show_task(void *args)
     
 }
 
-extern "C" esp_err_t image_show_start(Paint *paint, Epd *epd)
+esp_err_t image_show_start(void)
 {
-    g_paint = paint;
-    g_epd = epd;
+
     xTaskCreate(image_show_task, "image_task", 2048, NULL, 6, NULL);
     return ESP_OK;
 }
 
-extern "C" esp_err_t image_show_stop(void)
+esp_err_t image_show_stop(void)
 {
     g_is_stop = 1;
     return ESP_OK;

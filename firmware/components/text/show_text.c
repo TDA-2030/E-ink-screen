@@ -16,9 +16,6 @@
 static const char *TAG = "text show";
 
 
-static Paint *g_paint;
-static Epd *g_epd;
-
 #define FONT_GBK 1
 
 /**
@@ -226,7 +223,7 @@ static esp_err_t Get_HzMat(const char *code, uint8_t *mat, uint16_t *len, uint8_
 //font:汉字GBK码
 //size:字体大小
 //mode:0,正常显示,1,叠加显示
-extern "C" esp_err_t app_show_gbk_char(uint16_t x, uint16_t y, const char *gbk, uint8_t size, uint8_t mode)
+esp_err_t app_show_gbk_char(uint16_t x, uint16_t y, const char *gbk, uint8_t size, uint8_t mode)
 {
     esp_err_t ret;
     uint8_t temp, t, t1;
@@ -249,10 +246,10 @@ extern "C" esp_err_t app_show_gbk_char(uint16_t x, uint16_t y, const char *gbk, 
         for (t1 = 0; t1 < 8; t1++)
         {
             if (temp & 0x80){
-                g_paint->DrawPixel(x, y, 0);
+                Paint_DrawPixel(x, y, 0);
             }
             else if (mode == 0){
-                g_paint->DrawPixel(x, y, 1);
+                Paint_DrawPixel(x, y, 1);
             }
             temp <<= 1;
             x++;
@@ -275,7 +272,7 @@ extern "C" esp_err_t app_show_gbk_char(uint16_t x, uint16_t y, const char *gbk, 
 //str  :字符串
 //size :字体大小
 //mode:0,非叠加方式;1,叠加方式
-extern "C" esp_err_t app_show_text_str(uint16_t x, uint16_t y, uint16_t width, uint16_t height, const char *string, uint8_t size, uint8_t mode)
+esp_err_t app_show_text_str(uint16_t x, uint16_t y, uint16_t width, uint16_t height, const char *string, uint8_t size, uint8_t mode)
 {
     esp_err_t ret;
     char *str = (char*)string;
@@ -286,8 +283,6 @@ extern "C" esp_err_t app_show_text_str(uint16_t x, uint16_t y, uint16_t width, u
     uint16_t x0=x;
     uint16_t y0=y;
     uint8_t bHz=0;  //字符或者中文
-
-    g_paint->SetRotate(ROTATE_90);
 
     while(*str!=0)//数据未结束
     {
@@ -317,23 +312,16 @@ extern "C" esp_err_t app_show_text_str(uint16_t x, uint16_t y, uint16_t width, u
             }  
             else {
                 
-                g_paint->DrawCharAt((int)x, (int)y, gbk[1], &Font16, COLORED);printf("%c\n", gbk[1]);
-                
-                // LCD_ShowChar(x,y,*str,size,mode);//有效部分写入 
+                Paint_DrawCharAt((int)x, (int)y, gbk[1], &Font16, COLORED);printf("%c", gbk[1]);
             }
             x+=size/2; //字符,为全字的一半 
         }
     }
-    g_epd->SetFrameMemory(g_paint->GetImage(), 0, 0, g_paint->GetWidth(), g_paint->GetHeight());
-    g_epd->DisplayFrame();
-    g_epd->SetFrameMemory(g_paint->GetImage(), 0, 0, g_paint->GetWidth(), g_paint->GetHeight());
-    g_epd->DisplayFrame();
     return ESP_OK;
 }
 
-extern "C" esp_err_t app_show_text_init(Paint *paint, Epd *epd)
+esp_err_t app_show_text_init(void)
 {
-    g_paint = paint;
-    g_epd = epd;
+
     return ESP_OK;
 }
