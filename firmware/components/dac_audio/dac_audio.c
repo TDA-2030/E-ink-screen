@@ -7,9 +7,13 @@
 #include "driver/i2s.h"
 #include "driver/adc.h"
 #include "esp_adc_cal.h"
+#include "sdkconfig.h"
 
-static const char *TAG = "ADC audio";
+static const char *TAG = "DAC audio";
 
+#ifndef CONFIG_IDF_TARGET_ESP32
+    #warning "I2S DAC only support ESP32"
+#else
 
 //i2s number
 #define EXAMPLE_I2S_NUM           (0)
@@ -22,11 +26,18 @@ static const char *TAG = "ADC audio";
 #define EXAMPLE_I2S_CHANNEL_NUM   ((EXAMPLE_I2S_FORMAT < I2S_CHANNEL_FMT_ONLY_RIGHT) ? (2) : (1))
 
 
+static DRAM_ATTR i2s_dev_t* I2S[I2S_NUM_MAX] = {&I2S0, &I2S1};
 
 
-esp_err_t adc_audio_set_param(int rate, int bits, int ch)
+esp_err_t dac_audio_set_param(int rate, int bits, int ch)
 {
     i2s_set_clk(EXAMPLE_I2S_NUM, rate, bits, ch);
+    i2s_stop(EXAMPLE_I2S_NUM);
+    I2S[EXAMPLE_I2S_NUM]->clkm_conf.clkm_div_num = 40000000/rate/16;
+    I2S[EXAMPLE_I2S_NUM]->clkm_conf.clkm_div_b = 0;
+    I2S[EXAMPLE_I2S_NUM]->clkm_conf.clkm_div_a = 1;
+    I2S[EXAMPLE_I2S_NUM]->sample_rate_conf.tx_bck_div_num = 2;
+    i2s_start(EXAMPLE_I2S_NUM);
     return ESP_OK;
 }
 
@@ -62,15 +73,14 @@ static int example_i2s_dac_data_scale(uint8_t *d_buff, uint8_t *s_buff, uint32_t
 static uint8_t *i2s_write_buff;
 
 
-esp_err_t adc_audio_write(uint8_t *write_buff, size_t play_len, size_t *bytes_written, TickType_t ticks_to_wait)
+esp_err_t dac_audio_write(uint8_t *write_buff, size_t play_len, size_t *bytes_written, TickType_t ticks_to_wait)
 {
     int i2s_wr_len = example_i2s_dac_data_scale(i2s_write_buff, write_buff, play_len);
     i2s_write(EXAMPLE_I2S_NUM, i2s_write_buff, i2s_wr_len, bytes_written, ticks_to_wait);
     return ESP_OK;
 }
 
-
-esp_err_t adc_audio_init()
+esp_err_t dac_audio_init()
 {
     int i2s_num = EXAMPLE_I2S_NUM;
     i2s_config_t i2s_config = {
@@ -80,7 +90,7 @@ esp_err_t adc_audio_init()
         .communication_format = I2S_COMM_FORMAT_I2S_MSB,
         .channel_format = EXAMPLE_I2S_FORMAT,
         .intr_alloc_flags = 0,
-        .dma_buf_count = 2,
+        .dma_buf_count = 16,
         .dma_buf_len = 1024,
         .use_apll = 1,
     };
@@ -90,10 +100,11 @@ esp_err_t adc_audio_init()
     i2s_set_dac_mode(I2S_DAC_CHANNEL_LEFT_EN);
     //init ADC pad
     //  i2s_set_adc_mode(I2S_ADC_UNIT, I2S_ADC_CHANNEL);
+    ESP_LOGI(TAG, "DAC audio ok");
 
     i2s_write_buff = (uint8_t *) calloc(16 * 1024, sizeof(char));
 
     return ESP_OK;
 }
 
-
+#endif

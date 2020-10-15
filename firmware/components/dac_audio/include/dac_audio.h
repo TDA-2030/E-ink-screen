@@ -18,16 +18,26 @@
 #include "esp_err.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-
+#include "driver/i2s.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-esp_err_t adc_audio_init();
+typedef struct
+{
+    int dma_buf_count;          /*!< DMA buffer count, number of buffer*/
+    int dma_buf_len;            /*!< DMA buffer length, length of each buffer*/
+    i2s_channel_fmt_t       channel_format;         /*!< I2S channel format */
+    i2s_comm_format_t       communication_format;   /*!< I2S communication format */
 
-esp_err_t adc_audio_set_param(int rate, int bits, int ch);
+} dac_audio_config_t;
 
-esp_err_t adc_audio_write(uint8_t* write_buff, size_t play_len, size_t *bytes_written, TickType_t ticks_to_wait);
+
+esp_err_t dac_audio_init();
+
+esp_err_t dac_audio_set_param(int rate, int bits, int ch);
+
+esp_err_t dac_audio_write(uint8_t* write_buff, size_t play_len, size_t *bytes_written, TickType_t ticks_to_wait);
 
 #ifdef __cplusplus
 }
