@@ -26,14 +26,6 @@ extern "C" {
 #endif
 
 
-/**
- * 
- * Configuration 
- * 
- **/
-
-#define ISR_DEBUG 0   /**< INDEBUG SWITCH */
-
 
 /**
  * @brief Configuration parameters of pwm audio for pwm_audio_init function

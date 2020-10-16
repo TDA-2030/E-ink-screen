@@ -25,7 +25,7 @@
 #include "esp_log.h"
 #include "mp3dec.h"
 #include "pwm_audio.h"
-#include "adc_audio.h"
+#include "dac_audio.h"
 #include "driver/gpio.h"
 
 
@@ -36,8 +36,9 @@ static const char *TAG = "mp3 player";
         return (ret);                                                           \
     }
 
-#define PLAY_USE_DAC  /**< Comment out this line and use PWM to play audio */
+// #define PLAY_USE_DAC  /**< Comment out this line and use PWM to play audio */
 
+#define PWM_AUDIO_OUTPUT_IO 26
 
 #define AUDIO_EVT_PLAY        BIT0
 #define AUDIO_EVT_REQ_STOP    BIT1
@@ -47,18 +48,9 @@ static const char *TAG = "mp3 player";
 static EventGroupHandle_t g_mp3_event = NULL;
 
 
-static esp_err_t mp3_player_init(void);
-static esp_err_t mp3_player_deinit(void);
 
 static void audio_task(void *arg)
 {
-    esp_err_t ret;
-    ret = mp3_player_init();
-
-    if (ESP_OK != ret) {
-        goto exit;
-    }
-
     char *path = (char *)arg;
 
     ESP_LOGI(TAG, "start to decode and play %s", path);
@@ -165,7 +157,7 @@ static void audio_task(void *arg)
                 ESP_LOGI(TAG, "mp3file info: [bitrate=%d,layer=%d,nChans=%d,samprate=%d,bitsPerSample=%d,outputSamps=%d]",
                          mp3FrameInfo.bitrate, mp3FrameInfo.layer, mp3FrameInfo.nChans, mp3FrameInfo.samprate, mp3FrameInfo.bitsPerSample, mp3FrameInfo.outputSamps);
 #ifdef PLAY_USE_DAC
-                adc_audio_set_param(mp3FrameInfo.samprate, mp3FrameInfo.bitsPerSample, mp3FrameInfo.nChans);
+                dac_audio_set_param(mp3FrameInfo.samprate, mp3FrameInfo.bitsPerSample, mp3FrameInfo.nChans);
 #else
                 pwm_audio_set_param(mp3FrameInfo.samprate, mp3FrameInfo.bitsPerSample, mp3FrameInfo.nChans);
                 pwm_audio_start();
@@ -176,7 +168,7 @@ static void audio_task(void *arg)
             size_t bytes_write = 0;
             size_t write_len = mp3FrameInfo.outputSamps * (mp3FrameInfo.bitsPerSample / 8);
 #ifdef PLAY_USE_DAC
-            adc_audio_write((uint8_t *)out_buffer, write_len, &bytes_write, 1000 / portTICK_RATE_MS);
+            dac_audio_write((uint8_t *)out_buffer, write_len, &bytes_write, 1000 / portTICK_RATE_MS);
 #else
             pwm_audio_write((uint8_t *)out_buffer, write_len, &bytes_write, 1000 / portTICK_RATE_MS);
 #endif
@@ -186,9 +178,9 @@ static void audio_task(void *arg)
 
 error:
 #ifdef PLAY_USE_DAC
-    // i2s_zero_dma_buffer(0);
+    i2s_zero_dma_buffer(0);
 #else
-    // pwm_audio_stop();
+    pwm_audio_stop();
 #endif
     MP3FreeDecoder(hMP3Decoder);
     free(readBuf);
@@ -197,65 +189,51 @@ error:
 
 exit:
     xEventGroupSetBits(g_mp3_event, AUDIO_EVT_STOPPED);
-    mp3_player_deinit();
 
     /**< Play completed and delete this task */
     vTaskDelete(NULL);
 }
 
-static esp_err_t mp3_player_init(void)
+esp_err_t mp3_player_init(void)
 {
     esp_err_t ret;
 #ifdef PLAY_USE_DAC
-    adc_audio_init();
+    dac_audio_init();
 #else
     pwm_audio_config_t pac;
     pac.duty_resolution    = LEDC_TIMER_10_BIT;
-    pac.gpio_num_left      = 26;
-    pac.ledc_channel_left  = LEDC_CHANNEL_0;
+    pac.gpio_num_left      = PWM_AUDIO_OUTPUT_IO;
+    pac.ledc_channel_left  = LEDC_CHANNEL_1;
     pac.gpio_num_right     = -1;  /**< Use left channel only */
-    pac.ledc_channel_right = LEDC_CHANNEL_1;
-    pac.ledc_timer_sel     = LEDC_TIMER_0;
+    pac.ledc_channel_right = LEDC_CHANNEL_0;
+    pac.ledc_timer_sel     = LEDC_TIMER_1;
     pac.tg_num             = TIMER_GROUP_0;
     pac.timer_num          = TIMER_0;
     pac.ringbuf_len        = 1024 * 8;
     ret = pwm_audio_init(&pac);
     MP3_PLAYER_CHECK(ESP_OK == ret, "pwm audio init failed", ESP_FAIL);
-
-    pwm_audio_set_volume(-12);
 #endif
 
     g_mp3_event = xEventGroupCreate();
 
     return ESP_OK;
 }
-#include "board.h"
-static esp_err_t mp3_player_deinit(void)
+
+esp_err_t mp3_player_deinit(void)
 {
 #ifdef PLAY_USE_DAC
 #else
     pwm_audio_deinit();
 #endif
-    vEventGroupDelete(g_mp3_event);board_pa_ctrl(false);
+
+    vEventGroupDelete(g_mp3_event);
     g_mp3_event = NULL;
     return ESP_OK;
 }
 
 esp_err_t mp3_player_start(const char *path)
 {
-    int timeout = 0;
     xTaskCreate(audio_task, "audio_task", 4096, (void *)path, 5, NULL);
-
-    while (1) {
-        vTaskDelay(100 / portTICK_PERIOD_MS);
-
-        if (NULL != g_mp3_event) {
-            break;
-        } else if (++timeout > 10) {
-            ESP_LOGW(TAG, "start mp3 player task timeout");
-        }
-    }
-
     return ESP_OK;
 }
 
@@ -267,22 +245,14 @@ esp_err_t mp3_player_stop(void)
 
 esp_err_t mp3_player_wait(TickType_t xTicksToWait)
 {
-    if (NULL == g_mp3_event) {
-        return ESP_ERR_INVALID_STATE;
-    }
-    EventBits_t bits = xEventGroupWaitBits(g_mp3_event, AUDIO_EVT_STOPPED, pdTRUE, pdTRUE, xTicksToWait);
-    if (AUDIO_EVT_STOPPED & bits) {
-        return ESP_OK;
-    } else {
-        return ESP_ERR_TIMEOUT;
-    }
+    xEventGroupWaitBits(g_mp3_event, AUDIO_EVT_STOPPED, pdTRUE, pdTRUE, xTicksToWait);
     return ESP_OK;
 }
 
 esp_err_t mp3_player_set_volume(int8_t volume)
 {
 #ifdef PLAY_USE_DAC
-    return adc_audio_set_volume(volume);
+    return dac_audio_set_volume(volume);
 #else
     return pwm_audio_set_volume(volume);
 #endif

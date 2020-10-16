@@ -16,9 +16,6 @@
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
 
-#ifdef __cplusplus 
-extern "C" {
-#endif
 
 esp_err_t mp3_player_start(const char *path);
 
@@ -28,6 +25,5 @@ esp_err_t mp3_player_wait(TickType_t xTicksToWait);
 
 esp_err_t mp3_player_set_volume(int8_t volume);
 
-#ifdef __cplusplus 
-}
-#endif
+esp_err_t mp3_player_init(void);
+esp_err_t mp3_player_deinit(void);
