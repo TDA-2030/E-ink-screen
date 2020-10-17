@@ -29,6 +29,12 @@
 
 static const char *TAG = "edp";
 
+#define LCD_EPAPER_CHECK(a, str)  if(!(a)) {                               \
+        ESP_LOGE(TAG,"%s:%d (%s):%s", __FILE__, __LINE__, __FUNCTION__, str);   \
+                                                                   \
+    }
+    
+#if CONFIG_EPD_SCREEN_2IN13
 
 // EPD2IN13 commands
 #define DRIVER_OUTPUT_CONTROL                       0x01
@@ -69,7 +75,8 @@ static const unsigned char EPD_2IN13_lut_partial_update[] = {
 
 static uint16_t g_width = EPD_WIDTH;
 static uint16_t g_height = EPD_HEIGHT;
-
+static uint8_t is_init_iface = 0;
+static uint8_t g_mode = EPD_2IN13_FULL;
 
 static void SendCommand(unsigned char command) {
     DigitalWrite(DC_PIN, LOW);
@@ -92,20 +99,39 @@ static void WaitUntilIdle(void) {
     }
 }
 
+static void Epd_Set_LUT(uint8_t Mode)
+{
+    g_mode = Mode;
+    SendCommand(0x32);
+    if(Mode == EPD_2IN13_FULL) {
+        for (int i = 0; i < 30; i++) {
+            SendData(EPD_2IN13_lut_full_update[i]);
+        }
+    } else if(Mode == EPD_2IN13_PART) {
+        for (int i = 0; i < 30; i++) {
+            SendData(EPD_2IN13_lut_partial_update[i]);
+        }
+    }
+}
+
 int Epd_Init(uint8_t Mode) {
     ESP_LOGI(TAG, "e-Paper init ");
     /* this calls the peripheral hardware interface, see epdif */
-    if (IfInit() != 0) {
-        ESP_LOGE(TAG, "ifinit failed");
-        return -1;
+    if (0 == is_init_iface) {
+        if (IfInit() != 0) {
+            ESP_LOGE(TAG, "ifinit failed");
+            return -1;
+        }
+        is_init_iface = 1;
     }
+
     /* EPD hardware init start */
     DigitalWrite(RST_PIN, HIGH);
-    DelayMs(200);
+    DelayMs(100);
     DigitalWrite(RST_PIN, LOW);                //module reset    
-    DelayMs(200);
+    DelayMs(100);
     DigitalWrite(RST_PIN, HIGH);
-    DelayMs(200);
+    DelayMs(100);
 
     SendCommand(DRIVER_OUTPUT_CONTROL);
     SendData((EPD_2IN13_HEIGHT - 1) & 0xFF);
@@ -128,16 +154,7 @@ int Epd_Init(uint8_t Mode) {
     SendData(0x03);                     // X increment; Y increment
 
     // //set the look-up table register
-    SendCommand(0x32);
-    if(Mode == EPD_2IN13_FULL) {
-        for (int i = 0; i < 30; i++) {
-            SendData(EPD_2IN13_lut_full_update[i]);
-        }
-    } else if(Mode == EPD_2IN13_PART) {
-        for (int i = 0; i < 30; i++) {
-            SendData(EPD_2IN13_lut_partial_update[i]);
-        }
-    }
+    Epd_Set_LUT(Mode);
 
     return 0;
 }
@@ -152,135 +169,58 @@ int Epd_Deinit(void) {
     return 0;
 }
 
-void Epd_Set_LUT(uint8_t Mode)
-{
-    SendCommand(0x32);
-    if(Mode == EPD_2IN13_FULL) {
-        for (int i = 0; i < 30; i++) {
-            SendData(EPD_2IN13_lut_full_update[i]);
-        }
-    } else if(Mode == EPD_2IN13_PART) {
-        for (int i = 0; i < 30; i++) {
-            SendData(EPD_2IN13_lut_partial_update[i]);
-        }
-    }
-}
 
-/**
- *  @brief: private function to specify the memory area for data R/W
- */
-static void Epd_SetMemoryArea(int x_start, int y_start, int x_end, int y_end) {
-    SendCommand(SET_RAM_X_ADDRESS_START_END_POSITION);
-    /* x point must be the multiple of 8 or the last 3 bits will be ignored */
-    SendData((x_start >> 3) & 0xFF);
-    SendData((x_end >> 3) & 0xFF);
-    SendCommand(SET_RAM_Y_ADDRESS_START_END_POSITION);
-    SendData(y_start & 0xFF);
-    SendData((y_start >> 8) & 0xFF);
-    SendData(y_end & 0xFF);
-    SendData((y_end >> 8) & 0xFF);
-}
-
-/**
- *  @brief: private function to specify the start point for data R/W
- */
-static void Epd_SetMemoryPointer(int x, int y) {
-    SendCommand(SET_RAM_X_ADDRESS_COUNTER);
-    /* x point must be the multiple of 8 or the last 3 bits will be ignored */
-    SendData((x >> 3) & 0xFF);
-    SendCommand(SET_RAM_Y_ADDRESS_COUNTER);
-    SendData(y & 0xFF);
-    SendData((y >> 8) & 0xFF);
-    WaitUntilIdle();
-}
-
-/**
- *  @brief: put an image buffer to the frame memory.
- *          this won't update the display.
- */
-void Epd_SetFrameMemory_Area(
-    const unsigned char* image_buffer,
-    int x,
-    int y,
-    int image_width,
-    int image_height
-) {
-    int x_end;
-    int y_end;
-
-    if (
-        image_buffer == NULL ||
-        x < 0 || image_width < 0 ||
-        y < 0 || image_height < 0
-    ) {
-        return;
-    }
-    /* x point must be the multiple of 8 or the last 3 bits will be ignored */
-    x &= 0xF8;
-    image_width &= 0xF8;
-    if (x + image_width >= g_width) {
-        x_end = g_width - 1;
-    } else {
-        x_end = x + image_width - 1;
-    }
-    if (y + image_height >= g_height) {
-        y_end = g_height - 1;
-    } else {
-        y_end = y + image_height - 1;
-    }
-    Epd_SetMemoryArea(x, y, x_end, y_end);
-    /* set the frame memory line by line */
-    for (int j = y; j <= y_end; j++) {
-        Epd_SetMemoryPointer(x, j);
-        SendCommand(WRITE_RAM);
-        for (int i = x / 8; i <= x_end / 8; i++) {
-            SendData(image_buffer[(i - x / 8) + (j - y) * (image_width / 8)]);
-        }
-    }
-}
-
-/**
- *  @brief: put an image buffer to the frame memory.
- *          this won't update the display.
- *
- *          Question: When do you use this function instead of 
- *          void SetFrameMemory(
- *              const unsigned char* image_buffer,
- *              int x,
- *              int y,
- *              int image_width,
- *              int image_height
- *          );
- *          Answer: SetFrameMemory with parameters only reads image data
- *          from the RAM but not from the flash in AVR chips (for AVR chips,
- *          you have to use the function pgm_read_byte to read buffers 
- *          from the flash).
- */
-void Epd_SetFrameMemory(const unsigned char* image_buffer) {
-    Epd_SetMemoryArea(0, 0, g_width - 1, g_height - 1);
-    /* set the frame memory line by line */
-    for (int j = 0; j < g_height; j++) {
-        Epd_SetMemoryPointer(0, j);
-        SendCommand(WRITE_RAM);
-        for (int i = 0; i < g_width / 8; i++) {
-            SendData(*(&image_buffer[i + j * (g_width / 8)]));
-        }
-    }
-}
 
 /**
  *  @brief: clear the frame memory with the specified color.
  *          this won't update the display.
  */
 void Epd_ClearFrameMemory(unsigned char color) {
-    Epd_SetMemoryArea(0, 0, g_width - 1, g_height - 1);
-    /* set the frame memory line by line */
-    for (int j = 0; j < g_height; j++) {
-        Epd_SetMemoryPointer(0, j);
-        SendCommand(WRITE_RAM);
-        for (int i = 0; i < g_width / 8; i++) {
-            SendData(color);
-        }
+    
+}
+
+void Epd_set_window(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
+{
+
+    LCD_EPAPER_CHECK((0 == (x0 % 8)), "x0 should be a multiple of 8");
+    LCD_EPAPER_CHECK((0 == ((x1 + 1) % 8)), "x1+1 should be a multiple of 8");
+
+    x0 >>= 3;
+    x1 = ((x1 + 1) >> 3) - 1;
+    ESP_LOGI(TAG, "window:[%d, %d, %d, %d]", x0, y0, x1, y1);
+
+    SendCommand(SET_RAM_X_ADDRESS_START_END_POSITION);
+    /* x point must be the multiple of 8 or the last 3 bits will be ignored */
+    SendData(x0 & 0xFF);ESP_LOGI(TAG, "0x44, 0x%x, 0x%x", (x0 ) & 0xFF, (x1 ) & 0xFF);
+    SendData(x1 & 0xFF);
+    SendCommand(SET_RAM_Y_ADDRESS_START_END_POSITION);
+    SendData(y0 & 0xFF);
+    SendData((y0 >> 8) & 0xFF);
+    SendData(y1 & 0xFF);
+    SendData((y1 >> 8) & 0xFF);
+    ESP_LOGI(TAG, "0x45, 0x%x, 0x%x, 0x%x, 0x%x", y0 & 0xFF, (y0 >> 8) & 0xFF, y1 & 0xFF, (y1 >> 8) & 0xFF);
+
+    SendCommand(SET_RAM_X_ADDRESS_COUNTER);
+    /* x point must be the multiple of 8 or the last 3 bits will be ignored */
+    SendData(x0 & 0xFF);
+    SendCommand(SET_RAM_Y_ADDRESS_COUNTER);
+    SendData(y0 & 0xFF);
+    SendData((y0 >> 8) & 0xFF);
+    ESP_LOGI(TAG, "0x4E, 0x%x", (x0 ) & 0xFF);
+    ESP_LOGI(TAG, "0x4F, 0x%x, 0x%x", y0 & 0xFF, (y0 >> 8) & 0xFF);
+    
+    SendCommand(WRITE_RAM);
+}
+
+void Epd_draw_bitmap(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *bitmap)
+{
+    uint8_t *p = (uint8_t *)bitmap;
+    
+    Epd_set_window(x, y, x + w - 1, y + h - 1);
+    uint32_t len = w / 8 * h;
+    ESP_LOGI(TAG, "len = %d\n", len);
+    for (uint32_t i = 0; i < len; i++) {
+        SendData(p[i]);
     }
 }
 
@@ -307,13 +247,15 @@ void Epd_DisplayFrame(void) {
  *          The deep sleep mode would return to standby by hardware reset. 
  *          You can use Epd_Init() to awaken
  */
-void Epd_Sleep() {
-    SendCommand(DEEP_SLEEP_MODE);
-    WaitUntilIdle();
+void Epd_DeepSleep(void)
+{
+    SendCommand(0x10); //enter deep sleep
+    SendData(0x01);
+    DelayMs(100);
 }
 
 
-
+#endif
 
 /* END OF FILE */
 

@@ -52,18 +52,14 @@ extern "C" {
 
 int  Epd_Init(uint8_t Mode);
 int  Epd_Deinit(void);
-void Epd_Set_LUT(uint8_t Mode);
-void Epd_SetFrameMemory_Area(
-    const unsigned char* image_buffer,
-    int x,
-    int y,
-    int image_width,
-    int image_height
-);
-void Epd_SetFrameMemory(const unsigned char* image_buffer);
-void Epd_ClearFrameMemory(unsigned char color);
+
+
 void Epd_DisplayFrame(void);
-void Epd_Sleep(void);
+void Epd_DeepSleep(void);
+
+void Epd_set_window(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1);
+void Epd_draw_bitmap(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *bitmap);
+
 
 #ifdef __cplusplus 
 }
