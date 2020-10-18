@@ -26,6 +26,7 @@
 
 #include <stdlib.h>
 #include "epd2in13.h"
+#include "sdkconfig.h"
 
 static const char *TAG = "edp";
 
@@ -34,7 +35,7 @@ static const char *TAG = "edp";
                                                                    \
     }
     
-#if CONFIG_EPD_SCREEN_2IN13
+#if 1//CONFIG_EPD_SCREEN_2IN13
 
 // EPD2IN13 commands
 #define DRIVER_OUTPUT_CONTROL                       0x01
@@ -133,14 +134,27 @@ int Epd_Init(uint8_t Mode) {
     DigitalWrite(RST_PIN, HIGH);
     DelayMs(100);
 
+    // WaitUntilIdle();
+    // SendCommand(0x12); // soft reset
+    // WaitUntilIdle();
+
+    SendCommand(0x03); //Gate Driving voltage Control
+    SendData(0x19);
+
+    SendCommand(0x04); //Source Driving voltage Control
+    SendData(0x3c);
+    SendData(0xA8);
+    SendData(0x2e);
+
     SendCommand(DRIVER_OUTPUT_CONTROL);
     SendData((EPD_2IN13_HEIGHT - 1) & 0xFF);
     SendData(((EPD_2IN13_HEIGHT - 1) >> 8) & 0xFF);
     SendData(0x00);                     // GD = 0; SM = 0; TB = 0;
-    SendCommand(BOOSTER_SOFT_START_CONTROL);
-    SendData(0xD7);
-    SendData(0xD6);
-    SendData(0x9D);
+
+    // SendCommand(BOOSTER_SOFT_START_CONTROL);
+    // SendData(0xD7);
+    // SendData(0xD6);
+    // SendData(0x9D);
     SendCommand(WRITE_VCOM_REGISTER);
     SendData(0xA8);                     // VCOM 7C
     SendCommand(SET_DUMMY_LINE_PERIOD);
@@ -150,6 +164,7 @@ int Epd_Init(uint8_t Mode) {
 
     SendCommand(0X3C);	// BORDER_WAVEFORM_CONTROL
     SendData(0x63);
+
     SendCommand(DATA_ENTRY_MODE_SETTING);
     SendData(0x03);                     // X increment; Y increment
 
@@ -212,15 +227,54 @@ void Epd_set_window(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
     SendCommand(WRITE_RAM);
 }
 
+/**
+ *  @brief: private function to specify the memory area for data R/W
+ */
+static void Epd_SetMemoryArea(int x_start, int y_start, int x_end, int y_end) {
+    SendCommand(SET_RAM_X_ADDRESS_START_END_POSITION);
+    /* x point must be the multiple of 8 or the last 3 bits will be ignored */
+    SendData((x_start >> 3) & 0xFF);
+    SendData((x_end >> 3) & 0xFF);
+    SendCommand(SET_RAM_Y_ADDRESS_START_END_POSITION);
+    SendData(y_start & 0xFF);
+    SendData((y_start >> 8) & 0xFF);
+    SendData(y_end & 0xFF);
+    SendData((y_end >> 8) & 0xFF);
+}
+
+/**
+ *  @brief: private function to specify the start point for data R/W
+ */
+static void Epd_SetMemoryPointer(int x, int y) {
+    SendCommand(SET_RAM_X_ADDRESS_COUNTER);
+    /* x point must be the multiple of 8 or the last 3 bits will be ignored */
+    SendData((x >> 3) & 0xFF);
+    SendCommand(SET_RAM_Y_ADDRESS_COUNTER);
+    SendData(y & 0xFF);
+    SendData((y >> 8) & 0xFF);
+    WaitUntilIdle();
+}
+
 void Epd_draw_bitmap(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *bitmap)
 {
     uint8_t *p = (uint8_t *)bitmap;
     
-    Epd_set_window(x, y, x + w - 1, y + h - 1);
-    uint32_t len = w / 8 * h;
-    ESP_LOGI(TAG, "len = %d\n", len);
-    for (uint32_t i = 0; i < len; i++) {
-        SendData(p[i]);
+    // Epd_set_window(x, y, x + w - 1, y + h - 1);
+    // uint32_t len = w / 8 * h;
+    // ESP_LOGI(TAG, "len = %d\n", len);
+    // for (uint32_t i = 0; i < len; i++) {
+    //     SendData(p[i]);
+    // }
+    int x_end = x + w - 1;
+    int y_end = y + h - 1;
+    Epd_SetMemoryArea(x, y, x_end, y_end);
+    /* set the frame memory line by line */
+    for (int j = y; j <= y_end; j++) {
+        Epd_SetMemoryPointer(x, j);
+        SendCommand(WRITE_RAM);
+        for (int i = x / 8; i <= x_end / 8; i++) {
+            SendData(p[(i - x / 8) + (j - y) * (w / 8)]);
+        }
     }
 }
 
@@ -231,11 +285,18 @@ void Epd_draw_bitmap(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *b
  *          the the next action of SetFrameMemory or ClearFrame will 
  *          set the other memory area.
  */
-void Epd_DisplayFrame(void) {
-    SendCommand(DISPLAY_UPDATE_CONTROL_2);
-    SendData(0xC4);
-    SendCommand(MASTER_ACTIVATION);
-    SendCommand(TERMINATE_FRAME_READ_WRITE);
+void Epd_DisplayFrame(void)
+{
+    if (EPD_2IN13_FULL == g_mode) {
+        SendCommand(0x22); //Display Update Control
+        SendData(0xC7);
+        SendCommand(0x20);  //Activate Display Update Sequence
+
+    } else {
+        SendCommand(0x22); //Display Update Control
+        SendData(0x0C);
+        SendCommand(0x20); //Activate Display Update Sequence
+    }
     WaitUntilIdle();
 }
 
