@@ -64,7 +64,7 @@ static void image_show_task(void *args)
         Paint_SetRotate(ROTATE_90);
         Paint_DrawImage(0, 0, (int)w, (int)h, (uint8_t **)jpg_data.outData);
 
-        Epd_Init(EPD_2IN13_PART);
+        Epd_Init(EPD_2IN13_FULL);
         Epd_draw_bitmap(0, 0, EPD_WIDTH, EPD_HEIGHT, Paint_GetImage());
         Epd_DisplayFrame();
         Epd_DeepSleep();
@@ -74,7 +74,7 @@ static void image_show_task(void *args)
         decode_image_free(&jpg_data);
         heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
 
-        vTaskDelay(pdMS_TO_TICKS(3*1000));
+        vTaskDelay(pdMS_TO_TICKS(30*1000));
 
         if(g_is_stop){
             break;

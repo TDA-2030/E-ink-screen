@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "epd2in13.h"
 
-static const char *TAG = "edp";
+static const char *TAG = "edp gd";
 
 #define LCD_EPAPER_CHECK(a, str)  if(!(a)) {                               \
         ESP_LOGE(TAG,"%s:%d (%s):%s", __FILE__, __LINE__, __FUNCTION__, str);   \
