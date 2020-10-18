@@ -1,4 +1,16 @@
-menu "Eink I/O setting"
+menu "Eink Setting"
+    choice EPD_SCREEN_SELECT
+        bool "Select Epaper Screen"
+        default EPD_SCREEN_2IN13
+        help
+            Select Epaper Screen.
+    
+        config EPD_SCREEN_2IN13
+            bool "2in13"
+        config EPD_SCREEN_2IN13_GOOD_DISPLAY
+            bool "2in13 good display"
+    endchoice
+
     config EDPIO_RST_PIN
         int "RESET PIN"
         default 5

@@ -63,10 +63,12 @@ static void image_show_task(void *args)
         ESP_LOGI(TAG, "stary to display");
         Paint_SetRotate(ROTATE_90);
         Paint_DrawImage(0, 0, (int)w, (int)h, (uint8_t **)jpg_data.outData);
-        Epd_SetFrameMemory_Area(Paint_GetImage(), 0, 0, EPD_WIDTH, EPD_HEIGHT);
+
+        Epd_Init(EPD_2IN13_FULL);
+        Epd_draw_bitmap(0, 0, EPD_WIDTH, EPD_HEIGHT, Paint_GetImage());
         Epd_DisplayFrame();
-        Epd_SetFrameMemory_Area(Paint_GetImage(), 0, 0, EPD_WIDTH, EPD_HEIGHT);
-        Epd_DisplayFrame();
+        Epd_DeepSleep();
+        
         ESP_LOGI(TAG, "display ok");
 
         decode_image_free(&jpg_data);
@@ -86,7 +88,7 @@ static void image_show_task(void *args)
 esp_err_t image_show_start(void)
 {
 
-    xTaskCreate(image_show_task, "image_task", 2048, NULL, 6, NULL);
+    xTaskCreate(image_show_task, "image_task", 4096, NULL, 6, NULL);
     return ESP_OK;
 }
 
