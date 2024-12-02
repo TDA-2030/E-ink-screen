@@ -16,12 +16,12 @@ Keep in mind that the decoder library cannot handle progressive files (will give
 ``Image decoder: jd_prepare failed (8)`` as an error) so make sure to save in the correct
 format if you want to use a different image file.
 */
-#include "esp_log.h"
 #include <string.h>
-#include "esp_vfs.h"
+#include <stdio.h>
+#include "esp_log.h"
 
 #include "decode_image.h"
-#include "tjpgd.h"
+#include "./tjpgd/tjpgd.h"
 
 const char *TAG = "ImageDec";
 
@@ -70,7 +70,8 @@ static uint16_t outfunc(JDEC *decoder, void *bitmap, JRECT *rect)
             jd->outData[y][x] = v;
 #else
             /**< Convert to Gray */
-            uint8_t v = (in[0] + in[1] + in[2]) / 3;
+            uint8_t v = (in[0] * 77 + in[1] * 150 + in[2] * 29) / 256;
+            // uint8_t v = (in[0] + in[1] + in[2]) / 3;
             jd->outData[y][x] = v;
 #endif
             in += 3;

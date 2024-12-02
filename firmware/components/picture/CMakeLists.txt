@@ -1,4 +1,3 @@
-idf_component_register(SRC_DIRS "." "priv_src"
-                        PRIV_INCLUDE_DIRS "priv_src"
+idf_component_register(SRCS decode_image.c pretty_effect.c tjpgd/tjpgd.c
                        INCLUDE_DIRS "include"
                        )
